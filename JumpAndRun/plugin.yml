@@ -1,0 +1,16 @@
+main: at.haha007.minigames.jumpandrun.JumpAndRun
+version: 1.0
+api-version: 1.15
+name: AntiGriefTools
+author: Haha007
+softdepend:
+- Vault
+commands:
+  jumpandrun:
+    description: Jump And Run
+    usage: /<command> <args>
+    aliases:
+    - jnr
+    permission: antigrieftools.jail.command
+    permission-message: §cDu hast keine ausreichenden Rechte um diesen Command zu benutzen.
+    default: op
