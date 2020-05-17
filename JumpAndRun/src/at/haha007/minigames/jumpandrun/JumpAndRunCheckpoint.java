@@ -8,7 +8,7 @@ public class JumpAndRunCheckpoint {
 	private int posX, posY, posZ;
 	private float pitch, yaw;
 	private ArrayList<String> commands;
-	private float money;
+	private double money;
 
 	public Vector getPos() {
 		return new Vector(posX, posY, posZ);
@@ -18,7 +18,7 @@ public class JumpAndRunCheckpoint {
 		return commands;
 	}
 
-	public float getMoney() {
+	public double getMoney() {
 		return money;
 	}
 

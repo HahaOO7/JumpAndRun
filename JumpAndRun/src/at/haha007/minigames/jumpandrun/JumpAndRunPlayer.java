@@ -1,13 +1,16 @@
 package at.haha007.minigames.jumpandrun;
 
 import java.util.HashMap;
+import java.util.UUID;
 
+import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 
 public class JumpAndRunPlayer {
 	private HashMap<JumpAndRun, Integer> checkPoints;
 	private HashMap<JumpAndRun, Integer> reachedCheckpoints;
 	private JumpAndRun activeJumpAndRun;
+	private UUID uuid;
 
 	public JumpAndRun getActiveJumpAndRun() {
 		return activeJumpAndRun;
@@ -33,5 +36,28 @@ public class JumpAndRunPlayer {
 	}
 
 	private void reachCheckpoint() {
+		if (activeJumpAndRun == null)
+			return;
+		int activeCheckpintIndex = checkPoints.getOrDefault(activeJumpAndRun, 0);
+		checkPoints.put(activeJumpAndRun, activeCheckpintIndex + 1);
+		int maxCheckpointIndex = reachedCheckpoints.getOrDefault(activeJumpAndRun, 0);
+		if (activeCheckpintIndex == maxCheckpointIndex) {
+			reachedCheckpoints.put(activeJumpAndRun, activeCheckpintIndex + 1);
+			JumpAndRunCheckpoint checkpoint = getActiveCheckpoint();
+			double money = checkpoint.getMoney();
+			if (money > 0) {
+				JumpAndRunPlugin.getEconomy().depositPlayer(Bukkit.getOfflinePlayer(uuid), checkpoint.getMoney());
+			}
+			for (String command : checkpoint.getCommands()) {
+				Bukkit.getScheduler().runTask(JumpAndRunPlugin.getInstance(), () -> {
+					Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replaceAll("%player%", Bukkit.getOfflinePlayer(uuid).getName()));
+				});
+
+			}
+		}
+	}
+
+	private JumpAndRunCheckpoint getActiveCheckpoint() {
+		return activeJumpAndRun.getCheckpoint(checkPoints.getOrDefault(activeJumpAndRun, 0));
 	}
 }
