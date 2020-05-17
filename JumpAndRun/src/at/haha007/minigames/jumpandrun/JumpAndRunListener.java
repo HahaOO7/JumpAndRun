@@ -1,6 +1,5 @@
 package at.haha007.minigames.jumpandrun;
 
-import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -15,6 +14,7 @@ public class JumpAndRunListener implements Listener {
 	void onInteract(PlayerInteractEvent event) {
 		if (event.getAction() != Action.PHYSICAL)
 			return;
-		Block block = event.getClickedBlock();
+		JumpAndRunPlayer player = JumpAndRunPlugin.getPlayer(event.getPlayer());
+		player.checkActiveCheckpoint(event.getClickedBlock());
 	}
 }
