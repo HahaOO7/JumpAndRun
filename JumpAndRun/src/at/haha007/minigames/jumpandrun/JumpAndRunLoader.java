@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.UUID;
 
 public class JumpAndRunLoader {
+
 	public JumpAndRun loadJumpAndRun(File file) {
 		return null;
 	}

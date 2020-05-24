@@ -4,7 +4,13 @@ import java.util.HashMap;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.util.Vector;
 
 public class JumpAndRunPlayer {
 	private HashMap<JumpAndRun, Integer> checkPoints;
@@ -33,6 +39,33 @@ public class JumpAndRunPlayer {
 			return false;
 		reachCheckpoint();
 		return true;
+	}
+
+	public void respawn() {
+		JumpAndRunCheckpoint cp = getActiveCheckpoint();
+		if (cp == null)
+			return;
+		Player player = Bukkit.getPlayer(uuid);
+		if (player == null)
+			return;
+		Vector pos = cp.getPos();
+		player.teleport(new Location(
+				getActiveJumpAndRun().getWorld(),
+				pos.getBlockX() + .5,
+				pos.getBlockY() + .5,
+				pos.getBlockZ() + .5,
+				cp.getYaw(),
+				cp.getPitch()));
+	}
+
+	public void fillJnrInventory() {
+		Player player = Bukkit.getPlayer(uuid);
+		if (player == null)
+			return;
+		PlayerInventory inv = player.getInventory();
+		inv.setItem(0, Utils.getItem(Material.YELLOW_DYE, ChatColor.YELLOW + "Respawn"));
+		inv.setItem(1, Utils.getItem(Material.ORANGE_DYE, ChatColor.YELLOW + "Checkpoints"));
+		inv.setItem(8, Utils.getItem(Material.BARRIER, ChatColor.YELLOW + "Leave"));
 	}
 
 	private void reachCheckpoint() {

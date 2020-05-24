@@ -13,11 +13,16 @@ public class JumpAndRunPlugin extends JavaPlugin {
 	private static JumpAndRunPlugin instance = null;
 	private static HashMap<UUID, JumpAndRunPlayer> players = new HashMap<>();
 	private static JumpAndRunLoader loader;
+	private static JumpAndRunEditor editor;
 
 	@Override
 	public void onEnable() {
 		instance = this;
 		setupEconomy();
+		JumpAndRunCommand cmd = new JumpAndRunCommand();
+		getCommand("jumpandrun").setExecutor(cmd);
+		getCommand("jumpandrun").setTabCompleter(cmd);
+		editor = new JumpAndRunEditor();
 	}
 
 	private boolean setupEconomy() {
@@ -46,8 +51,14 @@ public class JumpAndRunPlugin extends JavaPlugin {
 
 	public static JumpAndRunPlayer getPlayer(UUID uuid) {
 		JumpAndRunPlayer p = players.get(uuid);
-		if (p == null)
+		if (p == null) {
 			p = loader.loadJumpAndRunPlayer(uuid);
+			players.put(uuid, p);
+		}
 		return p;
+	}
+
+	public static JumpAndRunEditor getEditor() {
+		return editor;
 	}
 }

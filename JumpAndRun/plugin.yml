@@ -11,6 +11,6 @@ commands:
     usage: /<command> <args>
     aliases:
     - jnr
-    permission: antigrieftools.jail.command
+    permission: jnr.command.use
     permission-message: §cDu hast keine ausreichenden Rechte um diesen Command zu benutzen.
     default: op
