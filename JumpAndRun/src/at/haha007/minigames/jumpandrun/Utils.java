@@ -6,10 +6,13 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.bukkit.Material;
+import org.bukkit.craftbukkit.v1_15_R1.entity.CraftPlayer;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+
+import net.minecraft.server.v1_15_R1.Packet;
 
 public class Utils {
 
@@ -51,5 +54,9 @@ public class Utils {
 		}
 
 		return string.replaceFirst(" ", "");
+	}
+
+	public static void sendPacket(Player player, Packet<?> packet) {
+		((CraftPlayer) player).getHandle().playerConnection.sendPacket(packet);
 	}
 }

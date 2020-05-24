@@ -51,9 +51,9 @@ public class JumpAndRunPlayer {
 		Vector pos = cp.getPos();
 		player.teleport(new Location(
 				getActiveJumpAndRun().getWorld(),
-				pos.getBlockX() + .5,
-				pos.getBlockY() + .5,
-				pos.getBlockZ() + .5,
+				pos.getX(),
+				pos.getY(),
+				pos.getZ(),
 				cp.getYaw(),
 				cp.getPitch()));
 	}

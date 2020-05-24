@@ -11,7 +11,7 @@ public class JumpAndRunCheckpoint {
 	private double money;
 
 	public Vector getPos() {
-		return new Vector(posX, posY, posZ);
+		return new Vector(posX + .5, posY + .5, posZ + .5);
 	}
 
 	public ArrayList<String> getCommands() {

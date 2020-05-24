@@ -19,7 +19,7 @@ public class JumpAndRun {
 		this.name = name;
 		this.world = world;
 	}
-	
+
 	public void teleportToCheckpoint(Player player) {
 		player.teleportAsync(null);
 	}
@@ -46,5 +46,9 @@ public class JumpAndRun {
 		} catch (IndexOutOfBoundsException e) {
 			return null;
 		}
+	}
+
+	public int size() {
+		return checkpoints.size();
 	}
 }
