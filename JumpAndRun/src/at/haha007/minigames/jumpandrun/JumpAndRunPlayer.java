@@ -13,8 +13,8 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.util.Vector;
 
 public class JumpAndRunPlayer {
-	private HashMap<JumpAndRun, Integer> checkPoints;
-	private HashMap<JumpAndRun, Integer> reachedCheckpoints;
+	private HashMap<String, Integer> checkPoints;
+	private HashMap<String, Integer> reachedCheckpoints;
 	private JumpAndRun activeJumpAndRun;
 	private UUID uuid;
 
@@ -32,7 +32,7 @@ public class JumpAndRunPlayer {
 			return false;
 		if (activeJumpAndRun.getWorld() != block.getWorld())
 			return false;
-		JumpAndRunCheckpoint checkpoint = activeJumpAndRun.getCheckpoint(checkPoints.get(activeJumpAndRun) + 1);
+		JumpAndRunCheckpoint checkpoint = activeJumpAndRun.getCheckpoint(checkPoints.get(activeJumpAndRun.getName()) + 1);
 		if (checkpoint == null)
 			return false;
 		if (!(checkpoint.comparePosition(block.getX(), block.getY(), block.getZ())))
@@ -72,10 +72,10 @@ public class JumpAndRunPlayer {
 		if (activeJumpAndRun == null)
 			return;
 		int activeCheckpintIndex = checkPoints.getOrDefault(activeJumpAndRun, 0);
-		checkPoints.put(activeJumpAndRun, activeCheckpintIndex + 1);
+		checkPoints.put(activeJumpAndRun.getName(), activeCheckpintIndex + 1);
 		int maxCheckpointIndex = reachedCheckpoints.getOrDefault(activeJumpAndRun, 0);
 		if (activeCheckpintIndex == maxCheckpointIndex) {
-			reachedCheckpoints.put(activeJumpAndRun, activeCheckpintIndex + 1);
+			reachedCheckpoints.put(activeJumpAndRun.getName(), activeCheckpintIndex + 1);
 			JumpAndRunCheckpoint checkpoint = getActiveCheckpoint();
 			double money = checkpoint.getMoney();
 			if (money > 0) {

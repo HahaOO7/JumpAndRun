@@ -6,9 +6,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 public class JumpAndRunListener implements Listener {
-	public JumpAndRunListener(JumpAndRunPlugin plugin) {
-		plugin.getServer().getPluginManager().registerEvents(this, plugin);
-	}
 
 	@EventHandler
 	void onInteract(PlayerInteractEvent event) {

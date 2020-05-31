@@ -1,6 +1,7 @@
 package at.haha007.minigames.jumpandrun;
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.UUID;
 
 public class JumpAndRunLoader {
@@ -10,11 +11,19 @@ public class JumpAndRunLoader {
 	}
 
 	public JumpAndRunPlayer loadJumpAndRunPlayer(UUID uuid) {
-		return null;
+		return new JumpAndRunPlayer();
 	}
 
 	public JumpAndRunPlayer loadJumpAndRunPlayer(String name) {
 		// should only be used when player is not online
-		return null;
+		return new JumpAndRunPlayer();
+	}
+
+	public HashSet<JumpAndRun> loadAllJumpAndRuns() {
+		return new HashSet<>();
+	}
+
+	public void saveJumpAndRun(JumpAndRun jnr) {
+
 	}
 }

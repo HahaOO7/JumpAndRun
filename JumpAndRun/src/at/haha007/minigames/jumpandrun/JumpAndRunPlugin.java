@@ -1,6 +1,7 @@
 package at.haha007.minigames.jumpandrun;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.UUID;
 
 import org.bukkit.entity.Player;
@@ -14,15 +15,22 @@ public class JumpAndRunPlugin extends JavaPlugin {
 	private static HashMap<UUID, JumpAndRunPlayer> players = new HashMap<>();
 	private static JumpAndRunLoader loader;
 	private static JumpAndRunEditor editor;
+	private static HashSet<JumpAndRun> jumpAndRuns;
 
 	@Override
 	public void onEnable() {
 		instance = this;
 		setupEconomy();
+		loader = new JumpAndRunLoader();
+		editor = new JumpAndRunEditor();
+		jumpAndRuns = loader.loadAllJumpAndRuns();
+
 		JumpAndRunCommand cmd = new JumpAndRunCommand();
 		getCommand("jumpandrun").setExecutor(cmd);
 		getCommand("jumpandrun").setTabCompleter(cmd);
-		editor = new JumpAndRunEditor();
+		getServer().getPluginManager().registerEvents(cmd, this);
+		getServer().getPluginManager().registerEvents(editor, this);
+		getServer().getPluginManager().registerEvents(new JumpAndRunListener(), this);
 	}
 
 	private boolean setupEconomy() {
@@ -60,5 +68,21 @@ public class JumpAndRunPlugin extends JavaPlugin {
 
 	public static JumpAndRunEditor getEditor() {
 		return editor;
+	}
+
+	public static JumpAndRun getJumpAndRun(String name) {
+		for (JumpAndRun jumpAndRun : jumpAndRuns) {
+			if (jumpAndRun.getName().equals(name))
+				return jumpAndRun;
+		}
+		return null;
+	}
+
+	public static HashSet<JumpAndRun> getJumpAndRuns() {
+		return jumpAndRuns;
+	}
+
+	public static JumpAndRunLoader getLoader() {
+		return loader;
 	}
 }
