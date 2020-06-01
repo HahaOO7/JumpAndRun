@@ -85,7 +85,6 @@ public class JumpAndRunPlayer {
 				Bukkit.getScheduler().runTask(JumpAndRunPlugin.getInstance(), () -> {
 					Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replaceAll("%player%", Bukkit.getOfflinePlayer(uuid).getName()));
 				});
-
 			}
 		}
 	}

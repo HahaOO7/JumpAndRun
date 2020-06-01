@@ -56,4 +56,13 @@ public class JumpAndRun {
 	public void addCheckpoint(JumpAndRunCheckpoint checkpoint, int index) {
 		checkpoints.add(index, checkpoint);
 	}
+
+	public int getCheckpointIndex(int x, int y, int z) {
+		for (int i = 0; i < checkpoints.size(); i++) {
+			JumpAndRunCheckpoint cp = checkpoints.get(i);
+			if (cp.comparePosition(x, y, z))
+				return i;
+		}
+		return -1;
+	}
 }

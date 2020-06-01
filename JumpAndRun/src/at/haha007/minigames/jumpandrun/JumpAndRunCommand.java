@@ -1,5 +1,6 @@
 package at.haha007.minigames.jumpandrun;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -36,23 +37,37 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 			return false;
 		if (!sender.hasPermission("jnr.command.execute"))
 			return false;
-		if (args.length == 2) {
-			if (args[0].equalsIgnoreCase("create")) {
-				if (JumpAndRunPlugin.getJumpAndRun(args[1]) != null) {
-					sender.sendMessage(ChatColor.RED + "Dieses JNR existiert bereits.");
-					return true;
-				}
-				JumpAndRun jnr = new JumpAndRun(
-						ChatColor.translateAlternateColorCodes('&', args[1]),
-						((Player) sender).getWorld(),
-						Arrays.asList(new JumpAndRunCheckpoint[] {}),
-						new HashMap<>());
-				JumpAndRunPlugin.getJumpAndRuns().add(jnr);
-				JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
-				sender.sendMessage(ChatColor.GOLD + "JNR erstellt.");
+		Player player = (Player) sender;
+		if (args.length == 2 && args[0].equalsIgnoreCase("create")) {
+			if (JumpAndRunPlugin.getJumpAndRun(args[1]) != null) {
+				sender.sendMessage(ChatColor.RED + "Dieses JNR existiert bereits.");
 				return true;
 			}
+			JumpAndRun jnr = new JumpAndRun(
+					ChatColor.translateAlternateColorCodes('&', args[1]),
+					player.getWorld(),
+					Arrays.asList(new JumpAndRunCheckpoint[] {}),
+					new HashMap<>());
+			JumpAndRunPlugin.getJumpAndRuns().add(jnr);
+			JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
+			sender.sendMessage(ChatColor.GOLD + "JNR erstellt.");
 			return true;
+		}
+		if (args.length > 1 && args[0].equalsIgnoreCase("addcmd")) {
+			ItemStack item = player.getInventory().getItemInMainHand();
+			JumpAndRunEditor editor = JumpAndRunPlugin.getEditor();
+			if (item == null || !editor.isEditorTool(item)) {
+				sender.sendMessage(ChatColor.RED + "Du benötigst ein JNR tool in der Hand.");
+				return true;
+			}
+			String cmd = Utils.combineStrings(1, args.length, args);
+			JumpAndRun jnr = editor.getJumpAndRun(item);
+			if (jnr == null)
+				return true;
+			int cp = editor.getCheckpoint(item);
+			jnr.getCheckpoint(cp).getCommands().add(cmd);
+			JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
+			sender.sendMessage(ChatColor.GOLD + "Command hinzugefügt");
 		}
 		openMainJnrMenu((Player) sender, 0);
 		return true;
@@ -60,6 +75,10 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 
 	@Override
 	public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+		if (args.length == 1) {
+			List<String> cmds = new ArrayList<>(Arrays.asList(new String[] { "create", "addcmd" }));
+			return Arrays.asList((String[]) cmds.stream().filter((String str) -> str.toLowerCase().startsWith(args[0])).toArray());
+		}
 		return null;
 	}
 

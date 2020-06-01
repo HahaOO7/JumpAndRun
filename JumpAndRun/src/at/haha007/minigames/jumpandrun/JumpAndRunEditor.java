@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
@@ -18,6 +19,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import net.minecraft.server.v1_15_R1.Block;
@@ -37,6 +39,7 @@ import net.minecraft.server.v1_15_R1.PacketPlayOutSpawnEntityLiving;
 public class JumpAndRunEditor implements Listener {
 	private HashMap<Player, List<Integer>> entityIDs = new HashMap<>();
 	private Random rand = new Random();
+	private String titleCpEditor = ChatColor.GREEN + "Checkpoint Editor";
 
 	@EventHandler
 	void onPlayerInteract(PlayerInteractEvent e) {
@@ -56,6 +59,7 @@ public class JumpAndRunEditor implements Listener {
 		int checkpoint = getCheckpoint(item);
 		if (e.getAction() == Action.LEFT_CLICK_BLOCK) {
 			// Edit Checkpoint
+			openCheckpointEditor(e.getPlayer(), jnr, checkpoint);
 		}
 		if (e.getAction() == Action.RIGHT_CLICK_BLOCK) {
 			// Insert Checkpoint
@@ -71,6 +75,7 @@ public class JumpAndRunEditor implements Listener {
 					checkpoint);
 			e.getClickedBlock().getRelative(BlockFace.UP).setType(Material.LIGHT_WEIGHTED_PRESSURE_PLATE, false);
 			e.getPlayer().getInventory().setItemInMainHand(getEditorTool(jnr, checkpoint + 1));
+			JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
 			removePath(e.getPlayer());
 			displayPath(e.getPlayer(), jnr, checkpoint + 1);
 		}
@@ -93,8 +98,12 @@ public class JumpAndRunEditor implements Listener {
 		}
 		int prev = e.getPreviousSlot();
 		ItemStack item = e.getPlayer().getInventory().getItem(prev);
-		if (!isEditorTool(item))
+		if (!isEditorTool(item)) {
+			item = e.getPlayer().getInventory().getItem(e.getNewSlot());
+			if (isEditorTool(item))
+				displayPath(e.getPlayer(), getJumpAndRun(item), getCheckpoint(item));
 			return;
+		}
 		e.setCancelled(true);
 		JumpAndRun jnr = getJumpAndRun(item);
 		if (jnr == null)
@@ -135,19 +144,20 @@ public class JumpAndRunEditor implements Listener {
 		}
 	}
 
-	public JumpAndRun getJumpAndRun(ItemStack editorTool) {
-		return JumpAndRunPlugin.getJumpAndRun(editorTool.getItemMeta().getLore().get(3).replaceFirst(ChatColor.DARK_AQUA + "JumpAndRun: " + ChatColor.AQUA, ""));
+	public Inventory openCheckpointEditor(Player player, JumpAndRun jnr, int cp) {
+		if (cp >= jnr.size() || cp < 0)
+			return null;
+		Inventory inv = Bukkit.createInventory(null, 54, titleCpEditor);
+		// set yaw/pitch
+		// set money
+		// remove commands
+		player.openInventory(inv);
+		return null;
 	}
 
-	public int getCheckpoint(ItemStack editorTool) {
-		return Integer.parseInt(editorTool.getItemMeta().getLore().get(2).replaceFirst(ChatColor.DARK_AQUA + "Checkpoint: " + ChatColor.AQUA, ""));
+	public void clickCheckpointEditor(Player player, JumpAndRun jnr, int cp) {
 	}
 
-	// add checkpoints
-	// remove checkpoints
-	// edit checkpoints
-
-	// display path
 	public void displayPath(Player player, JumpAndRun jnr, int selected) {
 		int[] guardianIDs = new int[jnr.size()];
 		int[] checkpointIDs = new int[jnr.size()];
@@ -182,7 +192,7 @@ public class JumpAndRunEditor implements Listener {
 			dataWatcher.register(new DataWatcherObject<>(5, DataWatcherRegistry.i), true);
 			if (i + 1 != guardianIDs.length)
 				dataWatcher.register(new DataWatcherObject<>(16, DataWatcherRegistry.b), guardianIDs[i + 1]);
-			PacketPlayOutEntityMetadata packet = new PacketPlayOutEntityMetadata(guardianIDs[i], dataWatcher, true);
+			PacketPlayOutEntityMetadata packet = new PacketPlayOutEntityMetadata(guardianIDs[guardianIDs.length - 1 - i], dataWatcher, true);
 			Utils.sendPacket(player, packet);
 		}
 
@@ -245,6 +255,14 @@ public class JumpAndRunEditor implements Listener {
 			setField(PacketPlayOutScoreboardTeam.class, "j", packetBlue, 1); // entity count?
 			Utils.sendPacket(player, packetBlue);
 		}
+	}
+
+	public JumpAndRun getJumpAndRun(ItemStack editorTool) {
+		return JumpAndRunPlugin.getJumpAndRun(editorTool.getItemMeta().getLore().get(3).replaceFirst(ChatColor.DARK_AQUA + "JumpAndRun: " + ChatColor.AQUA, ""));
+	}
+
+	public int getCheckpoint(ItemStack editorTool) {
+		return Integer.parseInt(editorTool.getItemMeta().getLore().get(2).replaceFirst(ChatColor.DARK_AQUA + "Checkpoint: " + ChatColor.AQUA, ""));
 	}
 
 	public void removePath(Player player) {
