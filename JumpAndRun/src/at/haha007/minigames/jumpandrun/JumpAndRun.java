@@ -8,10 +8,10 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 public class JumpAndRun {
-	private String name;
-	private World world;
-	private List<JumpAndRunCheckpoint> checkpoints;
-	private HashMap<String, Integer> highscores;
+	private final String name;
+	private final  World world;
+	private final List<JumpAndRunCheckpoint> checkpoints;
+	private final HashMap<String, Integer> highscores;
 
 	public JumpAndRun(String name, World world, List<JumpAndRunCheckpoint> checkpoints,
 			HashMap<String, Integer> highscores) {

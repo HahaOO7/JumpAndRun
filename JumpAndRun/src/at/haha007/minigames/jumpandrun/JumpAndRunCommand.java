@@ -1,11 +1,10 @@
 package at.haha007.minigames.jumpandrun;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -19,11 +18,11 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.jetbrains.annotations.NotNull;
 
-import net.md_5.bungee.api.ChatColor;
 
 public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listener {
-//	private final String titleCreateJnr = ChatColor.GREEN + "Create JNR";
+	//	private final String titleCreateJnr = ChatColor.GREEN + "Create JNR";
 	private final String titleMainMenu = ChatColor.GREEN + "JNR menu";
 	private final String titleCheckpointMenu = ChatColor.GREEN + "JNR Checkpoint Menu";
 
@@ -32,7 +31,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 	// teleport to jnr
 
 	@Override
-	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+	public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
 		if (!(sender instanceof Player))
 			return false;
 		if (!sender.hasPermission("jnr.command.execute"))
@@ -43,11 +42,20 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 				sender.sendMessage(ChatColor.RED + "Dieses JNR existiert bereits.");
 				return true;
 			}
+			Location loc = player.getLocation();
 			JumpAndRun jnr = new JumpAndRun(
-					ChatColor.translateAlternateColorCodes('&', args[1]),
-					player.getWorld(),
-					Arrays.asList(new JumpAndRunCheckpoint[] {}),
-					new HashMap<>());
+				ChatColor.translateAlternateColorCodes('&', args[1]),
+				player.getWorld(),
+				Collections.singletonList(
+					new JumpAndRunCheckpoint(
+						loc.getBlockX(),
+						loc.getBlockY(),
+						loc.getBlockZ(),
+						0f,
+						0f,
+						null,
+						0d)),
+				new HashMap<>());
 			JumpAndRunPlugin.getJumpAndRuns().add(jnr);
 			JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
 			sender.sendMessage(ChatColor.GOLD + "JNR erstellt.");
@@ -56,7 +64,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 		if (args.length > 1 && args[0].equalsIgnoreCase("addcmd")) {
 			ItemStack item = player.getInventory().getItemInMainHand();
 			JumpAndRunEditor editor = JumpAndRunPlugin.getEditor();
-			if (item == null || !editor.isEditorTool(item)) {
+			if (!editor.isEditorTool(item)) {
 				sender.sendMessage(ChatColor.RED + "Du benötigst ein JNR tool in der Hand.");
 				return true;
 			}
@@ -74,35 +82,33 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 	}
 
 	@Override
-	public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+	public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
 		if (args.length == 1) {
-			List<String> cmds = new ArrayList<>(Arrays.asList(new String[] { "create", "addcmd" }));
-			return Arrays.asList((String[]) cmds.stream().filter((String str) -> str.toLowerCase().startsWith(args[0])).toArray());
+			List<String> cmds = new ArrayList<>(Arrays.asList("create", "addcmd"));
+			return Arrays.asList((String[]) cmds.stream().filter(str -> str.toLowerCase().startsWith(args[0])).toArray());
 		}
 		return null;
 	}
 
-	Inventory openMainJnrMenu(Player player, int page) {
+	void openMainJnrMenu(Player player, int page) {
 		Inventory inv = Bukkit.createInventory(null, 54, titleMainMenu);
-		// list jnr's fist 5 lines
-		List<JumpAndRun> jnrs = Arrays.asList(JumpAndRunPlugin.getJumpAndRuns().toArray(new JumpAndRun[0]));
-
-		if (page < jnrs.size() / 45)
+		List<JumpAndRun> jnrList = Arrays.asList(JumpAndRunPlugin.getJumpAndRuns().toArray(new JumpAndRun[0]));
+		if (page > jnrList.size() / 45)
 			page = 0;
 		if (page < 0)
-			page = jnrs.size() / 45;
+			page = jnrList.size() / 45;
 
-		jnrs.sort((a, b) -> a.getName().compareTo(b.getName()));
+		jnrList.sort(Comparator.comparing(JumpAndRun::getName));
 		for (int i = 0; i < 45; i++) {
 			int index = page * 45 + i;
-			if (index > jnrs.size() - 1)
+			if (index > jnrList.size() - 1)
 				break;
-			JumpAndRun jnr = jnrs.get(index);
+			JumpAndRun jnr = jnrList.get(index);
 			inv.setItem(index, Utils.getItem(
-					Material.LIGHT_WEIGHTED_PRESSURE_PLATE,
-					ChatColor.GREEN + jnr.getName(),
-					ChatColor.GOLD + "Checkpoints: " + ChatColor.AQUA + jnr.size(),
-					ChatColor.GOLD + "World: " + jnr.getWorld()));
+				Material.LIGHT_WEIGHTED_PRESSURE_PLATE,
+				ChatColor.GREEN + jnr.getName(),
+				ChatColor.GOLD + "Checkpoints: " + ChatColor.AQUA + jnr.size(),
+				ChatColor.GOLD + "World: " + jnr.getWorld()));
 
 		}
 
@@ -110,7 +116,6 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 		inv.setItem(45, getArrowLeft());
 		inv.setItem(53, getArrowRight());
 		player.openInventory(inv);
-		return inv;
 	}
 
 	private void handleMainMenuClick(InventoryClickEvent event) {
@@ -119,61 +124,58 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 			return;
 		int page = Utils.getNbtInt(event.getInventory().getItem(49), "page");
 		switch (event.getSlot()) {
-		case 45:
-			openMainJnrMenu((Player) event.getWhoClicked(), page--);
-			break;
-		case 53:
-			openMainJnrMenu((Player) event.getWhoClicked(), page++);
-			break;
+			case 45:
+				openMainJnrMenu((Player) event.getWhoClicked(), page - 1);
+				break;
+			case 53:
+				openMainJnrMenu((Player) event.getWhoClicked(), page + 1);
+				break;
 
-		default:
-			if (event.getClick() == ClickType.RIGHT) {
-				ItemStack item = event.getCurrentItem();
-				if (item == null)
-					break;
-				String itemName = item.getItemMeta().getDisplayName();
-				if (itemName == null)
-					break;
-				String jnrName = itemName.replaceFirst(ChatColor.GREEN.toString(), "");
-				JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(jnrName);
-				if (jnr == null)
-					break;
-				Utils.giveItem((Player) event.getWhoClicked(),
+			default:
+				if (event.getClick() == ClickType.RIGHT) {
+					ItemStack item = event.getCurrentItem();
+					if (item == null)
+						break;
+					String itemName = item.getItemMeta().getDisplayName();
+					String jnrName = itemName.replaceFirst(ChatColor.GREEN.toString(), "");
+					JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(jnrName);
+					if (jnr == null)
+						break;
+					Utils.giveItem((Player) event.getWhoClicked(),
 						JumpAndRunPlugin.getEditor().getEditorTool(jnr, jnr.size()));
-			} else if (event.getClick() == ClickType.LEFT) {
-				ItemStack item = event.getCurrentItem();
-				if (item == null)
-					break;
-				String itemName = item.getItemMeta().getDisplayName();
-				if (itemName == null)
-					break;
-				String jnrName = itemName.replaceFirst(ChatColor.GREEN.toString(), "");
-				JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(jnrName);
-				if (jnr == null)
-					break;
-				openCheckpointMenu((Player) event.getWhoClicked(), jnr);
-			}
-			break;
+				} else if (event.getClick() == ClickType.LEFT) {
+					ItemStack item = event.getCurrentItem();
+					if (item == null)
+						break;
+					String itemName = item.getItemMeta().getDisplayName();
+					String jnrName = itemName.replaceFirst(ChatColor.GREEN.toString(), "");
+					JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(jnrName);
+					if (jnr == null)
+						break;
+					openCheckpointMenu((Player) event.getWhoClicked(), jnr);
+				}
+				break;
 		}
 	}
 
-	Inventory openCheckpointMenu(Player player, JumpAndRun jnr) {
+	void openCheckpointMenu(Player player, JumpAndRun jnr) {
 		Inventory inv = Bukkit.createInventory(null, 54, titleCheckpointMenu);
+		for (int i = 0; i < jnr.size(); i++) {
+			jnr.getCheckpoint(i);
+			System.out.println("DU HAST WAS VERGESSEN!");
+		}
 		player.openInventory(inv);
-		return inv;
 	}
 
 	private void handleCheckpointMenuClick(InventoryClickEvent event) {
 		event.setCancelled(true);
-		if (event.getClickedInventory() != event.getView().getTopInventory())
-			return;
+		if (event.getClickedInventory() != event.getView().getTopInventory()) return;
+		System.out.println("DU HAST WAS VERGESSEN!");
 	}
 
 	@EventHandler
 	void onInventoryClick(InventoryClickEvent event) {
 		String title = event.getView().getTitle();
-		if (title == null)
-			return;
 		if (title.equals(titleCheckpointMenu))
 			handleCheckpointMenuClick(event);
 		else if (title.equals(titleMainMenu))
@@ -182,10 +184,10 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 
 	private ItemStack getArrowRight() {
 		ItemStack item = Utils.getSkull(
-				"ewogICJ0aW1lc3RhbXAiIDogMTU5MDg1NTAyMTg0OCwKICAicHJvZmlsZUlkIiA6ICI1MGM4NTEwYjVlYTA0ZDYwYmU5YTdkNTQy"
-						+ "ZDZjZDE1NiIsCiAgInByb2ZpbGVOYW1lIiA6ICJNSEZfQXJyb3dSaWdodCIsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0"
-						+ "lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9kMzRlZjA2Mzg1"
-						+ "MzcyMjJiMjBmNDgwNjk0ZGFkYzBmODVmYmUwNzU5ZDU4MWFhN2ZjZGYyZTQzMTM5Mzc3MTU4IgogICAgfQogIH0KfQ==");
+			"ewogICJ0aW1lc3RhbXAiIDogMTU5MDg1NTAyMTg0OCwKICAicHJvZmlsZUlkIiA6ICI1MGM4NTEwYjVlYTA0ZDYwYmU5YTdkNTQy"
+				+ "ZDZjZDE1NiIsCiAgInByb2ZpbGVOYW1lIiA6ICJNSEZfQXJyb3dSaWdodCIsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0"
+				+ "lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9kMzRlZjA2Mzg1"
+				+ "MzcyMjJiMjBmNDgwNjk0ZGFkYzBmODVmYmUwNzU5ZDU4MWFhN2ZjZGYyZTQzMTM5Mzc3MTU4IgogICAgfQogIH0KfQ==");
 		ItemMeta meta = item.getItemMeta();
 		meta.setDisplayName(ChatColor.GOLD + "Next Page");
 		item.setItemMeta(meta);
@@ -194,10 +196,10 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 
 	private ItemStack getArrowLeft() {
 		ItemStack item = Utils.getSkull(
-				"ewogICJ0aW1lc3RhbXAiIDogMTU5MDg1NTI4OTM2MiwKICAicHJvZmlsZUlkIiA6ICJhNjhmMGI2NDhkMTQ0MDAwYTk1ZjRiOWJh"
-						+ "MTRmOGRmOSIsCiAgInByb2ZpbGVOYW1lIiA6ICJNSEZfQXJyb3dMZWZ0IiwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU"
-						+ "4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlL2Y3YWFjYWQxOTNl"
-						+ "MjIyNjk3MWVkOTUzMDJkYmE0MzM0MzhiZTQ2NDRmYmFiNWViZjgxODA1NDA2MTY2N2ZiZTIiCiAgICB9CiAgfQp9");
+			"ewogICJ0aW1lc3RhbXAiIDogMTU5MDg1NTI4OTM2MiwKICAicHJvZmlsZUlkIiA6ICJhNjhmMGI2NDhkMTQ0MDAwYTk1ZjRiOWJh"
+				+ "MTRmOGRmOSIsCiAgInByb2ZpbGVOYW1lIiA6ICJNSEZfQXJyb3dMZWZ0IiwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU"
+				+ "4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlL2Y3YWFjYWQxOTNl"
+				+ "MjIyNjk3MWVkOTUzMDJkYmE0MzM0MzhiZTQ2NDRmYmFiNWViZjgxODA1NDA2MTY2N2ZiZTIiCiAgICB9CiAgfQp9");
 		ItemMeta meta = item.getItemMeta();
 		meta.setDisplayName(ChatColor.GOLD + "Previous Page");
 		item.setItemMeta(meta);

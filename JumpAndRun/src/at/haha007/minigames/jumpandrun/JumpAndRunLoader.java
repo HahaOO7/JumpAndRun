@@ -11,12 +11,12 @@ public class JumpAndRunLoader {
 	}
 
 	public JumpAndRunPlayer loadJumpAndRunPlayer(UUID uuid) {
-		return new JumpAndRunPlayer();
+		return new JumpAndRunPlayer(checkPoints, reachedCheckpoints, activeJumpAndRun, uuid);
 	}
 
 	public JumpAndRunPlayer loadJumpAndRunPlayer(String name) {
 		// should only be used when player is not online
-		return new JumpAndRunPlayer();
+		return new JumpAndRunPlayer(checkPoints, reachedCheckpoints, activeJumpAndRun, uuid);
 	}
 
 	public HashSet<JumpAndRun> loadAllJumpAndRuns() {

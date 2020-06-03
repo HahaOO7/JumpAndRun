@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.UUID;
 
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -12,7 +14,7 @@ import net.milkbowl.vault.economy.Economy;
 public class JumpAndRunPlugin extends JavaPlugin {
 	private static Economy econ = null;
 	private static JumpAndRunPlugin instance = null;
-	private static HashMap<UUID, JumpAndRunPlayer> players = new HashMap<>();
+	private static HashMap<UUID, JumpAndRunPlayer> players;
 	private static JumpAndRunLoader loader;
 	private static JumpAndRunEditor editor;
 	private static HashSet<JumpAndRun> jumpAndRuns;
@@ -20,7 +22,8 @@ public class JumpAndRunPlugin extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		instance = this;
-		setupEconomy();
+		if(!setupEconomy()) Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[JumpAndRun] Failed to connect to economy!");
+		players = new HashMap<>();
 		loader = new JumpAndRunLoader();
 		editor = new JumpAndRunEditor();
 		jumpAndRuns = loader.loadAllJumpAndRuns();
@@ -38,11 +41,9 @@ public class JumpAndRunPlugin extends JavaPlugin {
 			return false;
 		}
 		RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
-		if (rsp == null) {
-			return false;
-		}
+		if (rsp == null) return false;
 		econ = rsp.getProvider();
-		return econ != null;
+		return econ.isEnabled();
 	}
 
 	public static Economy getEconomy() {

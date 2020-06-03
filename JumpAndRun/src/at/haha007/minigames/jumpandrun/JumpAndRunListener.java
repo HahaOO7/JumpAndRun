@@ -9,9 +9,8 @@ public class JumpAndRunListener implements Listener {
 
 	@EventHandler
 	void onInteract(PlayerInteractEvent event) {
-		if (event.getAction() != Action.PHYSICAL)
-			return;
+		if (event.getAction() != Action.PHYSICAL) return;
 		JumpAndRunPlayer player = JumpAndRunPlugin.getPlayer(event.getPlayer());
-		player.checkActiveCheckpoint(event.getClickedBlock());
+		System.out.println(player.checkActiveCheckpoint(event.getClickedBlock()));
 	}
 }

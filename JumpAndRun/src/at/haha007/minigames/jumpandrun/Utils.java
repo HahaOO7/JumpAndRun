@@ -1,11 +1,8 @@
 package at.haha007.minigames.jumpandrun;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.UUID;
 
 import org.bukkit.Material;
 import org.bukkit.craftbukkit.v1_15_R1.entity.CraftPlayer;
@@ -22,15 +19,16 @@ import com.mojang.authlib.properties.Property;
 import net.minecraft.server.v1_15_R1.Packet;
 
 public class Utils {
+	private static final Random rand = new Random();
+
 	public static ItemStack getSkull(String texture) {
 		ItemStack item = new ItemStack(Material.PLAYER_HEAD);
 
 		SkullMeta itemMeta = (SkullMeta) item.getItemMeta();
 		GameProfile profile = new GameProfile(UUID.randomUUID(), null);
 		profile.getProperties().put("textures", new Property("textures", texture));
-		Field profileField = null;
 		try {
-			profileField = itemMeta.getClass().getDeclaredField("profile");
+			Field profileField = itemMeta.getClass().getDeclaredField("profile");
 			profileField.setAccessible(true);
 			profileField.set(itemMeta, profile);
 		} catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException e) {
@@ -69,15 +67,12 @@ public class Utils {
 	}
 
 	public static String combineStrings(int startIndex, int endIndex, String... strings) {
-		String string = "";
-		try {
-			for (int i = startIndex; i <= endIndex; i++) {
-				string += " " + strings[i];
-			}
-		} catch (IndexOutOfBoundsException e) {
+		StringBuilder string = new StringBuilder();
+		for (int i = startIndex; i <= endIndex; i++) {
+			string.append(" ").append(strings[i]);
 		}
 
-		return string.replaceFirst(" ", "");
+		return string.toString().replaceFirst(" ", "");
 	}
 
 	public static void sendPacket(Player player, Packet<?> packet) {
@@ -102,5 +97,16 @@ public class Utils {
 
 	public static int getNbtInt(ItemStack item, String key) {
 		return CraftItemStack.asNMSCopy(item).getOrCreateTag().getInt(key);
+	}
+
+	public static String getRandomString(int length) {
+		int leftLimit = 97; // letter 'a'
+		int rightLimit = 122; // letter 'z'
+		return rand.ints(leftLimit, rightLimit + 1)
+			.limit(length)
+			.collect(StringBuilder::new,
+				StringBuilder::appendCodePoint,
+				StringBuilder::append)
+			.toString();
 	}
 }

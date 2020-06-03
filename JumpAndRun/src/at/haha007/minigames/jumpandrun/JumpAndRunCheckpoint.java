@@ -8,7 +8,7 @@ import org.bukkit.util.Vector;
 public class JumpAndRunCheckpoint {
 	private int posX, posY, posZ;
 	private float pitch, yaw;
-	private List<String> commands;
+	private final List<String> commands;
 	private double money;
 
 	public JumpAndRunCheckpoint(int x, int y, int z, float pitch, float yaw, List<String> commands, double money) {
@@ -23,6 +23,21 @@ public class JumpAndRunCheckpoint {
 
 	public Vector getPos() {
 		return new Vector(posX + .5, posY, posZ + .5);
+	}
+
+	public void setPos(int x, int y, int z) {
+		posX = x;
+		posY = y;
+		posZ = z;
+	}
+
+	public void setRotation(float pitch, float yaw) {
+		this.yaw = yaw;
+		this.pitch = pitch;
+	}
+
+	public void setMoney(double money) {
+		this.money = money;
 	}
 
 	public List<String> getCommands() {

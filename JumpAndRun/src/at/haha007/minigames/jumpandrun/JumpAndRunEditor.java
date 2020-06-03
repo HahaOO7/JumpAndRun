@@ -1,12 +1,7 @@
 package at.haha007.minigames.jumpandrun;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -48,8 +43,6 @@ public class JumpAndRunEditor implements Listener {
 		if (!e.getPlayer().hasPermission("jnr.editor.use"))
 			return;
 		ItemStack item = e.getPlayer().getInventory().getItemInMainHand();
-		if (item == null)
-			return;
 		if (!isEditorTool(item))
 			return;
 		e.setCancelled(true);
@@ -64,15 +57,15 @@ public class JumpAndRunEditor implements Listener {
 		if (e.getAction() == Action.RIGHT_CLICK_BLOCK) {
 			// Insert Checkpoint
 			jnr.addCheckpoint(
-					new JumpAndRunCheckpoint(
-							e.getClickedBlock().getX(),
-							e.getClickedBlock().getY() + 1,
-							e.getClickedBlock().getZ(),
-							0f,
-							0f,
-							null,
-							0d),
-					checkpoint);
+				new JumpAndRunCheckpoint(
+					e.getClickedBlock().getX(),
+					e.getClickedBlock().getY() + 1,
+					e.getClickedBlock().getZ(),
+					0f,
+					0f,
+					null,
+					0d),
+				checkpoint);
 			e.getClickedBlock().getRelative(BlockFace.UP).setType(Material.LIGHT_WEIGHTED_PRESSURE_PLATE, false);
 			e.getPlayer().getInventory().setItemInMainHand(getEditorTool(jnr, checkpoint + 1));
 			JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
@@ -90,6 +83,7 @@ public class JumpAndRunEditor implements Listener {
 			ItemStack item = e.getPlayer().getInventory().getItem(e.getNewSlot());
 			if (!isEditorTool(item))
 				return;
+			assert item != null;
 			JumpAndRun jnr = getJumpAndRun(item);
 			if (jnr == null)
 				return;
@@ -100,11 +94,14 @@ public class JumpAndRunEditor implements Listener {
 		ItemStack item = e.getPlayer().getInventory().getItem(prev);
 		if (!isEditorTool(item)) {
 			item = e.getPlayer().getInventory().getItem(e.getNewSlot());
-			if (isEditorTool(item))
+			if (isEditorTool(item)) {
+				assert item != null;
 				displayPath(e.getPlayer(), getJumpAndRun(item), getCheckpoint(item));
+			}
 			return;
 		}
 		e.setCancelled(true);
+		assert item != null;
 		JumpAndRun jnr = getJumpAndRun(item);
 		if (jnr == null)
 			return;
@@ -122,18 +119,16 @@ public class JumpAndRunEditor implements Listener {
 			e.getPlayer().getInventory().setItemInMainHand(getEditorTool(jnr, (cp - 1 + size) % size));
 			removePath(e.getPlayer());
 			displayPath(e.getPlayer(), jnr, getCheckpoint(e.getPlayer().getInventory().getItemInMainHand()));
-			return;
 		}
 	}
 
 	public ItemStack getEditorTool(JumpAndRun jnr, int checkpoint) {
-		ItemStack item = Utils.getItem(
-				Material.NETHER_STAR, ChatColor.GOLD + "JNR Tool",
-				ChatColor.DARK_AQUA + "Left: " + ChatColor.AQUA + "edit Checkpoint",
-				ChatColor.DARK_AQUA + "Right: " + ChatColor.AQUA + "add Checkpoint",
-				ChatColor.DARK_AQUA + "Checkpoint: " + ChatColor.AQUA + checkpoint,
-				ChatColor.DARK_AQUA + "JumpAndRun: " + ChatColor.AQUA + jnr.getName());
-		return item;
+		return Utils.getItem(
+			Material.NETHER_STAR, ChatColor.GOLD + "JNR Tool",
+			ChatColor.DARK_AQUA + "Left: " + ChatColor.AQUA + "edit Checkpoint",
+			ChatColor.DARK_AQUA + "Right: " + ChatColor.AQUA + "add Checkpoint",
+			ChatColor.DARK_AQUA + "Checkpoint: " + ChatColor.AQUA + checkpoint,
+			ChatColor.DARK_AQUA + "JumpAndRun: " + ChatColor.AQUA + jnr.getName());
 	}
 
 	public boolean isEditorTool(ItemStack item) {
@@ -144,15 +139,14 @@ public class JumpAndRunEditor implements Listener {
 		}
 	}
 
-	public Inventory openCheckpointEditor(Player player, JumpAndRun jnr, int cp) {
+	public void openCheckpointEditor(Player player, JumpAndRun jnr, int cp) {
 		if (cp >= jnr.size() || cp < 0)
-			return null;
+			return;
 		Inventory inv = Bukkit.createInventory(null, 54, titleCpEditor);
 		// set yaw/pitch
 		// set money
 		// remove commands
 		player.openInventory(inv);
-		return null;
 	}
 
 	public void clickCheckpointEditor(Player player, JumpAndRun jnr, int cp) {
@@ -162,9 +156,7 @@ public class JumpAndRunEditor implements Listener {
 		int[] guardianIDs = new int[jnr.size()];
 		int[] checkpointIDs = new int[jnr.size()];
 		UUID[] uuids = new UUID[jnr.size()];
-		List<Integer> idList = entityIDs.get(player);
-		if (idList == null)
-			entityIDs.put(player, idList = new ArrayList<>());
+		List<Integer> idList = entityIDs.computeIfAbsent(player, entityIds -> new ArrayList<>());
 
 		// spawn guardians
 		for (int i = 0; i < guardianIDs.length; i++) {
@@ -218,24 +210,24 @@ public class JumpAndRunEditor implements Listener {
 		}
 
 		// light checkpoints up
-		for (int i = 0; i < checkpointIDs.length; i++) {
+		for (int checkpointID : checkpointIDs) {
 			DataWatcher dataWatcher = new DataWatcher(null);
 			dataWatcher.register(new DataWatcherObject<>(0, DataWatcherRegistry.a), (byte) 0b01000000);
 			dataWatcher.register(new DataWatcherObject<>(5, DataWatcherRegistry.i), true);
-			PacketPlayOutEntityMetadata packet = new PacketPlayOutEntityMetadata(checkpointIDs[i], dataWatcher, true);
+			PacketPlayOutEntityMetadata packet = new PacketPlayOutEntityMetadata(checkpointID, dataWatcher, true);
 			Utils.sendPacket(player, packet);
 		}
 
 		if (selected > 0) {
 			PacketPlayOutScoreboardTeam packetRed = new PacketPlayOutScoreboardTeam();
-			setField(PacketPlayOutScoreboardTeam.class, "a", packetRed, getRandomString(16)); // name
+			setField(PacketPlayOutScoreboardTeam.class, "a", packetRed, Utils.getRandomString(16)); // name
 			setField(PacketPlayOutScoreboardTeam.class, "b", packetRed, new ChatComponentText("")); // display name
 			setField(PacketPlayOutScoreboardTeam.class, "c", packetRed, new ChatComponentText("PRE ")); // prefix
 			setField(PacketPlayOutScoreboardTeam.class, "d", packetRed, new ChatComponentText(" SUF")); // suffix
-			setField(PacketPlayOutScoreboardTeam.class, "e", packetRed, "never"); // nametag visible
+			setField(PacketPlayOutScoreboardTeam.class, "e", packetRed, "never"); // name tag visible
 			setField(PacketPlayOutScoreboardTeam.class, "f", packetRed, "never"); // collision rule
 			setField(PacketPlayOutScoreboardTeam.class, "g", packetRed, EnumChatFormat.RED); // team color
-			setField(PacketPlayOutScoreboardTeam.class, "h", packetRed, Arrays.asList(uuids[selected - 1].toString())); // entities
+			setField(PacketPlayOutScoreboardTeam.class, "h", packetRed, Collections.singletonList(uuids[selected - 1].toString())); // entities
 			setField(PacketPlayOutScoreboardTeam.class, "i", packetRed, 0); // packet type crete team
 			setField(PacketPlayOutScoreboardTeam.class, "j", packetRed, 1); // entity count?
 			Utils.sendPacket(player, packetRed);
@@ -243,14 +235,14 @@ public class JumpAndRunEditor implements Listener {
 
 		if (selected < uuids.length && selected >= 0) {
 			PacketPlayOutScoreboardTeam packetBlue = new PacketPlayOutScoreboardTeam();
-			setField(PacketPlayOutScoreboardTeam.class, "a", packetBlue, getRandomString(16)); // name
+			setField(PacketPlayOutScoreboardTeam.class, "a", packetBlue, Utils.getRandomString(16)); // name
 			setField(PacketPlayOutScoreboardTeam.class, "b", packetBlue, new ChatComponentText("")); // display name
 			setField(PacketPlayOutScoreboardTeam.class, "c", packetBlue, new ChatComponentText("PRE ")); // prefix
 			setField(PacketPlayOutScoreboardTeam.class, "d", packetBlue, new ChatComponentText(" SUF")); // suffix
-			setField(PacketPlayOutScoreboardTeam.class, "e", packetBlue, "never"); // nametag visible
+			setField(PacketPlayOutScoreboardTeam.class, "e", packetBlue, "never"); // name tag visible
 			setField(PacketPlayOutScoreboardTeam.class, "f", packetBlue, "never"); // collision rule
 			setField(PacketPlayOutScoreboardTeam.class, "g", packetBlue, EnumChatFormat.BLUE); // team color
-			setField(PacketPlayOutScoreboardTeam.class, "h", packetBlue, Arrays.asList(uuids[selected].toString())); // entities
+			setField(PacketPlayOutScoreboardTeam.class, "h", packetBlue, Collections.singletonList(uuids[selected].toString())); // entities
 			setField(PacketPlayOutScoreboardTeam.class, "i", packetBlue, 0); // packet type crete team
 			setField(PacketPlayOutScoreboardTeam.class, "j", packetBlue, 1); // entity count?
 			Utils.sendPacket(player, packetBlue);
@@ -258,11 +250,15 @@ public class JumpAndRunEditor implements Listener {
 	}
 
 	public JumpAndRun getJumpAndRun(ItemStack editorTool) {
-		return JumpAndRunPlugin.getJumpAndRun(editorTool.getItemMeta().getLore().get(3).replaceFirst(ChatColor.DARK_AQUA + "JumpAndRun: " + ChatColor.AQUA, ""));
+		return JumpAndRunPlugin.getJumpAndRun(
+			editorTool.getItemMeta().getLore().get(3).replaceFirst(
+				ChatColor.DARK_AQUA + "JumpAndRun: " + ChatColor.AQUA, ""));
 	}
 
 	public int getCheckpoint(ItemStack editorTool) {
-		return Integer.parseInt(editorTool.getItemMeta().getLore().get(2).replaceFirst(ChatColor.DARK_AQUA + "Checkpoint: " + ChatColor.AQUA, ""));
+		return Integer.parseInt(
+			editorTool.getItemMeta().getLore().get(2).replaceFirst(
+				ChatColor.DARK_AQUA + "Checkpoint: " + ChatColor.AQUA, ""));
 	}
 
 	public void removePath(Player player) {
@@ -271,16 +267,6 @@ public class JumpAndRunEditor implements Listener {
 		for (int i : entityIDs.get(player)) {
 			Utils.sendPacket(player, new PacketPlayOutEntityDestroy(i));
 		}
-	}
-
-	private String getRandomString(int length) {
-		int leftLimit = 97; // letter 'a'
-		int rightLimit = 122; // letter 'z'
-		return rand.ints(leftLimit, rightLimit + 1)
-				.limit(length)
-				.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-				.toString();
-
 	}
 
 	private void setField(Class<?> clazz, String fieldName, Object object, Object value) {
