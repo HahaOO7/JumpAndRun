@@ -1,25 +1,27 @@
 package at.haha007.minigames.jumpandrun;
 
-import java.util.HashMap;
-import java.util.UUID;
-
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.util.Vector;
 
+import java.util.HashMap;
+import java.util.UUID;
+
 public class JumpAndRunPlayer {
 	private final HashMap<String, Integer> checkPoints;
 	private final HashMap<String, Integer> reachedCheckpoints;
+	private final HashMap<String, Long> runTimestamps;
 	private final JumpAndRun activeJumpAndRun;
 	private final UUID uuid;
 
-	public JumpAndRunPlayer(HashMap<String, Integer> checkPoints, HashMap<String, Integer> reachedCheckpoints, JumpAndRun activeJumpAndRun, UUID uuid) {
+	public JumpAndRunPlayer(HashMap<String, Integer> checkPoints, HashMap<String, Integer> reachedCheckpoints, HashMap<String, Long> runTimestamps, JumpAndRun activeJumpAndRun, UUID uuid) {
 		this.checkPoints = checkPoints;
 		this.reachedCheckpoints = reachedCheckpoints;
 		this.activeJumpAndRun = activeJumpAndRun;
 		this.uuid = uuid;
+		this.runTimestamps = runTimestamps;
 	}
 
 	public JumpAndRun getActiveJumpAndRun() {
@@ -98,5 +100,21 @@ public class JumpAndRunPlayer {
 
 	private JumpAndRunCheckpoint getActiveCheckpoint() {
 		return activeJumpAndRun.getCheckpoint(checkPoints.getOrDefault(activeJumpAndRun.getName(), 0));
+	}
+
+	public UUID getUuid() {
+		return uuid;
+	}
+
+	public HashMap<String, Integer> getCheckPoints() {
+		return checkPoints;
+	}
+
+	public HashMap<String, Integer> getReachedCheckpoints() {
+		return reachedCheckpoints;
+	}
+
+	public HashMap<String, Long> getRunTimestamps() {
+		return runTimestamps;
 	}
 }

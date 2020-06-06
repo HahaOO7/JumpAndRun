@@ -1,20 +1,21 @@
 package at.haha007.minigames.jumpandrun;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
+
 public class JumpAndRun {
 	private final String name;
-	private final  World world;
+	private final World world;
 	private final List<JumpAndRunCheckpoint> checkpoints;
-	private final HashMap<String, Integer> highscores;
+	private final HashMap<UUID, Long> highscores;
 
 	public JumpAndRun(String name, World world, List<JumpAndRunCheckpoint> checkpoints,
-			HashMap<String, Integer> highscores) {
+	                  HashMap<UUID, Long> highscores) {
 		this.checkpoints = checkpoints == null ? new ArrayList<>() : new ArrayList<>(checkpoints);
 		this.highscores = highscores == null ? new HashMap<>() : highscores;
 		this.name = name;
@@ -29,7 +30,7 @@ public class JumpAndRun {
 		return checkpoints;
 	}
 
-	public HashMap<String, Integer> getHighscores() {
+	public HashMap<UUID, Long> getHighscores() {
 		return highscores;
 	}
 
@@ -65,4 +66,5 @@ public class JumpAndRun {
 		}
 		return -1;
 	}
+
 }

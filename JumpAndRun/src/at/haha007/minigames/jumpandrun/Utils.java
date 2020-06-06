@@ -1,10 +1,11 @@
 package at.haha007.minigames.jumpandrun;
 
-import java.lang.reflect.Field;
-import java.util.*;
-import java.util.Map.Entry;
-
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
+import net.minecraft.server.v1_15_R1.Packet;
 import org.bukkit.Material;
+import org.bukkit.craftbukkit.libs.org.apache.commons.codec.DecoderException;
+import org.bukkit.craftbukkit.libs.org.apache.commons.codec.binary.Hex;
 import org.bukkit.craftbukkit.v1_15_R1.entity.CraftPlayer;
 import org.bukkit.craftbukkit.v1_15_R1.inventory.CraftItemStack;
 import org.bukkit.enchantments.Enchantment;
@@ -12,11 +13,17 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
-
-import net.minecraft.server.v1_15_R1.Packet;
+import java.io.*;
+import java.lang.reflect.Field;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class Utils {
 	private static final Random rand = new Random();
@@ -108,5 +115,38 @@ public class Utils {
 				StringBuilder::appendCodePoint,
 				StringBuilder::append)
 			.toString();
+	}
+
+	public static UUID getUUID(String name) {
+		try {
+			JSONObject json = readJsonFromUrl("https://api.mojang.com/users/profiles/minecraft/" + name);
+			String uuidString = json.get("id").toString();
+			byte[] data = Hex.decodeHex(uuidString.toCharArray());
+			return new UUID(ByteBuffer.wrap(data, 0, 8).getLong(), ByteBuffer.wrap(data, 8, 8).getLong());
+		} catch (IOException | ParseException | DecoderException e) {
+			return null;
+		}
+	}
+
+	public static JSONObject readJsonFromUrl(String url) throws IOException, ParseException {
+		InputStream is = new URL(url).openStream();
+		try {
+			BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+			String jsonText = readAll(rd);
+			JSONObject json = (JSONObject) new JSONParser().parse(jsonText);
+			return json;
+		} finally {
+			is.close();
+		}
+	}
+
+	public static String readAll(Reader rd) throws IOException {
+		StringBuilder sb = new StringBuilder();
+		int cp;
+		while ((cp = rd.read()) != -1) {
+			sb.append((char) cp);
+		}
+
+		return sb.toString();
 	}
 }

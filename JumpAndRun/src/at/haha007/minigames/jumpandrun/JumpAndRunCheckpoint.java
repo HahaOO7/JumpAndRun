@@ -1,9 +1,9 @@
 package at.haha007.minigames.jumpandrun;
 
+import org.bukkit.util.Vector;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import org.bukkit.util.Vector;
 
 public class JumpAndRunCheckpoint {
 	private int posX, posY, posZ;
@@ -58,5 +58,17 @@ public class JumpAndRunCheckpoint {
 
 	public float getYaw() {
 		return yaw;
+	}
+
+	public int getPosX() {
+		return posX;
+	}
+
+	public int getPosY() {
+		return posY;
+	}
+
+	public int getPosZ() {
+		return posZ;
 	}
 }
