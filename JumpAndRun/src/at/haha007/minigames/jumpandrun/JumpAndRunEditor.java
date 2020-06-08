@@ -1,40 +1,30 @@
 package at.haha007.minigames.jumpandrun;
 
-import java.lang.reflect.Field;
-import java.util.*;
-
+import net.minecraft.server.v1_15_R1.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
-import net.minecraft.server.v1_15_R1.Block;
-import net.minecraft.server.v1_15_R1.Blocks;
-import net.minecraft.server.v1_15_R1.ChatComponentText;
-import net.minecraft.server.v1_15_R1.DataWatcher;
-import net.minecraft.server.v1_15_R1.DataWatcherObject;
-import net.minecraft.server.v1_15_R1.DataWatcherRegistry;
-import net.minecraft.server.v1_15_R1.EntityTypes;
-import net.minecraft.server.v1_15_R1.EnumChatFormat;
-import net.minecraft.server.v1_15_R1.PacketPlayOutEntityDestroy;
-import net.minecraft.server.v1_15_R1.PacketPlayOutEntityMetadata;
-import net.minecraft.server.v1_15_R1.PacketPlayOutScoreboardTeam;
-import net.minecraft.server.v1_15_R1.PacketPlayOutSpawnEntity;
-import net.minecraft.server.v1_15_R1.PacketPlayOutSpawnEntityLiving;
+import java.lang.reflect.Field;
+import java.util.*;
 
 public class JumpAndRunEditor implements Listener {
-	private HashMap<Player, List<Integer>> entityIDs = new HashMap<>();
-	private Random rand = new Random();
-	private String titleCpEditor = ChatColor.GREEN + "Checkpoint Editor";
+	private final HashMap<Player, List<Integer>> entityIDs = new HashMap<>();
+	private final Random rand = new Random();
+	private final String titleCpEditor = ChatColor.GREEN + "Checkpoint Editor";
 
 	@EventHandler
 	void onPlayerInteract(PlayerInteractEvent e) {
@@ -50,9 +40,9 @@ public class JumpAndRunEditor implements Listener {
 		if (jnr == null)
 			return;
 		int checkpoint = getCheckpoint(item);
-		if (e.getAction() == Action.LEFT_CLICK_BLOCK) {
+		if (e.getAction() == Action.LEFT_CLICK_BLOCK || e.getAction() == Action.LEFT_CLICK_AIR) {
 			// Edit Checkpoint
-			openCheckpointEditor(e.getPlayer(), jnr, checkpoint);
+			openCheckpointEditor(e.getPlayer(), jnr, checkpoint, 1);
 		}
 		if (e.getAction() == Action.RIGHT_CLICK_BLOCK) {
 			// Insert Checkpoint
@@ -139,17 +129,96 @@ public class JumpAndRunEditor implements Listener {
 		}
 	}
 
-	public void openCheckpointEditor(Player player, JumpAndRun jnr, int cp) {
-		if (cp >= jnr.size() || cp < 0)
+	public void openCheckpointEditor(Player player, JumpAndRun jnr, int cpIndex, int moneyMultiplyer) {
+		if (cpIndex >= jnr.size() || cpIndex < 0)
 			return;
 		Inventory inv = Bukkit.createInventory(null, 54, titleCpEditor);
+		inv.setItem(4, getEditorTool(jnr, cpIndex));
+		JumpAndRunCheckpoint cp = jnr.getCheckpoint(cpIndex);
 		// set yaw/pitch
+		ItemStack arrowItem = Utils.getSkull(
+			"ewogICJ0aW1lc3RhbXAiIDogMTU5MDg1NTAyMTg0OCwKICAicHJvZmlsZUlkIiA6ICI1MGM4NTEwYjVlYTA0ZDYwYmU5YTdkNTQy"
+				+ "ZDZjZDE1NiIsCiAgInByb2ZpbGVOYW1lIiA6ICJNSEZfQXJyb3dSaWdodCIsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0"
+				+ "lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9kMzRlZjA2Mzg1"
+				+ "MzcyMjJiMjBmNDgwNjk0ZGFkYzBmODVmYmUwNzU5ZDU4MWFhN2ZjZGYyZTQzMTM5Mzc3MTU4IgogICAgfQogIH0KfQ==");
+		ItemMeta arrowMeta = arrowItem.getItemMeta();
+		arrowMeta.setDisplayName(ChatColor.GOLD + "Set Direction");
+		arrowMeta.setLore(new ArrayList<>(Arrays.asList(ChatColor.AQUA + "Overrides yaw/pitch",
+			ChatColor.AQUA + "Yaw:   " + ChatColor.DARK_AQUA + cp.getYaw(),
+			ChatColor.AQUA + "Pitch: " + ChatColor.DARK_AQUA + cp.getPitch()
+		)));
+		inv.setItem(2, arrowItem);
+
 		// set money
-		// remove commands
+		inv.setItem(6,
+			Utils.getItem(Material.GOLD_INGOT,
+				ChatColor.GOLD + "Money Amount",
+				ChatColor.AQUA.toString() + cp.getMoney(),
+				ChatColor.AQUA + "Right Click: " + ChatColor.DARK_AQUA + "-",
+				ChatColor.AQUA + "Left Click:  " + ChatColor.DARK_AQUA + "+"));
+		inv.setItem(7,
+			Utils.getItem(Material.GOLD_INGOT,
+				ChatColor.GOLD + "Money Change",
+				ChatColor.AQUA.toString() + ChatColor.DARK_AQUA + Math.pow(10, moneyMultiplyer),
+				ChatColor.AQUA + "Multiplyer:  " + ChatColor.DARK_AQUA + moneyMultiplyer,
+				ChatColor.AQUA + "Right Click: " + ChatColor.DARK_AQUA + "-",
+				ChatColor.AQUA + "Left Click:  " + ChatColor.DARK_AQUA + "+"));
+		// commands
+		List<String> cmds = cp.getCommands();
+		for (int i = 0; i < cmds.size(); i++)
+			inv.setItem(i + 9, Utils.getItem(Material.PAPER, ChatColor.GOLD.toString() + cmds.get(i)));
 		player.openInventory(inv);
 	}
 
-	public void clickCheckpointEditor(Player player, JumpAndRun jnr, int cp) {
+	@EventHandler
+	void onInventoryClick(InventoryClickEvent event) {
+		if (!titleCpEditor.equals(event.getView().getTitle())) return;
+		event.setCancelled(true);
+		if (event.getClickedInventory() != event.getView().getTopInventory()) return;
+		ItemStack toolItem = event.getView().getTopInventory().getItem(4);
+		if (toolItem == null) return;
+		JumpAndRun jnr = getJumpAndRun(toolItem);
+		int checkpointIndex;
+		checkpointIndex = getCheckpoint(toolItem);
+		JumpAndRunCheckpoint cp = jnr.getCheckpoint(checkpointIndex);
+
+		switch (event.getSlot()) {
+			case 2:
+				cp.setRotation(event.getWhoClicked().getLocation().getYaw(), event.getWhoClicked().getLocation().getPitch());
+				JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
+				break;
+
+			case 4:
+				Location loc = new Location(jnr.getWorld(), cp.getPosX() + .5, cp.getPosY(), cp.getPosZ() + .5, cp.getYaw(), cp.getPitch());
+				event.getWhoClicked().teleport(loc);
+				break;
+
+			case 6:
+				ItemStack item = event.getInventory().getItem(7);
+				if (item == null) break;
+				List<String> lore = item.getItemMeta().getLore();
+				if (lore == null) break;
+				int moneyDif = Integer.parseInt(lore.get(1).replaceFirst(
+					ChatColor.AQUA + "Multiplyer: {2}" + ChatColor.DARK_AQUA,
+					""));
+				cp.setMoney(cp.getMoney() + (event.getClick().isLeftClick() ? (Math.pow(10, moneyDif)) : -(Math.pow(10, moneyDif))));
+				openCheckpointEditor((Player) event.getWhoClicked(), jnr, checkpointIndex, moneyDif);
+				JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
+				break;
+
+			case 7:
+				item = event.getInventory().getItem(7);
+				if (item == null) break;
+				lore = item.getItemMeta().getLore();
+				if (lore == null) break;
+				openCheckpointEditor((Player) event.getWhoClicked(), jnr, checkpointIndex,
+					Integer.parseInt(lore.get(1).replaceFirst(
+						ChatColor.AQUA + "Multiplyer: {2}" + ChatColor.DARK_AQUA,
+						"")) + (event.getClick().isLeftClick() ? 1 : -1));
+
+			default:
+				break;
+		}
 	}
 
 	public void displayPath(Player player, JumpAndRun jnr, int selected) {
@@ -182,8 +251,8 @@ public class JumpAndRunEditor implements Listener {
 			dataWatcher.register(new DataWatcherObject<>(0, DataWatcherRegistry.a), (byte) 0b00100000);
 			dataWatcher.register(new DataWatcherObject<>(4, DataWatcherRegistry.i), true);
 			dataWatcher.register(new DataWatcherObject<>(5, DataWatcherRegistry.i), true);
-			if (i + 1 != guardianIDs.length)
-				dataWatcher.register(new DataWatcherObject<>(16, DataWatcherRegistry.b), guardianIDs[i + 1]);
+			if (i > 0)
+				dataWatcher.register(new DataWatcherObject<>(16, DataWatcherRegistry.b), guardianIDs[guardianIDs.length - i]);
 			PacketPlayOutEntityMetadata packet = new PacketPlayOutEntityMetadata(guardianIDs[guardianIDs.length - 1 - i], dataWatcher, true);
 			Utils.sendPacket(player, packet);
 		}
@@ -250,15 +319,17 @@ public class JumpAndRunEditor implements Listener {
 	}
 
 	public JumpAndRun getJumpAndRun(ItemStack editorTool) {
-		return JumpAndRunPlugin.getJumpAndRun(
-			editorTool.getItemMeta().getLore().get(3).replaceFirst(
-				ChatColor.DARK_AQUA + "JumpAndRun: " + ChatColor.AQUA, ""));
+		List<String> lore = editorTool.getItemMeta().getLore();
+		if (lore == null) return null;
+		return JumpAndRunPlugin.getJumpAndRun(lore.get(3).replaceFirst(
+			ChatColor.DARK_AQUA + "JumpAndRun: " + ChatColor.AQUA, ""));
 	}
 
 	public int getCheckpoint(ItemStack editorTool) {
-		return Integer.parseInt(
-			editorTool.getItemMeta().getLore().get(2).replaceFirst(
-				ChatColor.DARK_AQUA + "Checkpoint: " + ChatColor.AQUA, ""));
+		List<String> lore = editorTool.getItemMeta().getLore();
+		if (lore == null) return -1;
+		return Integer.parseInt(lore.get(2).replaceFirst(
+			ChatColor.DARK_AQUA + "Checkpoint: " + ChatColor.AQUA, ""));
 	}
 
 	public void removePath(Player player) {

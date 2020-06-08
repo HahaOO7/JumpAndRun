@@ -31,7 +31,7 @@ public class JumpAndRunCheckpoint {
 		posZ = z;
 	}
 
-	public void setRotation(float pitch, float yaw) {
+	public void setRotation(float yaw, float pitch) {
 		this.yaw = yaw;
 		this.pitch = pitch;
 	}

@@ -59,15 +59,15 @@ public class JumpAndRunLoader {
 		}
 
 		for (Object obj : checkpointSections) {
-			ConfigurationSection checkpointSection = (ConfigurationSection) obj;
+			LinkedHashMap<String, Object> hashMap = (LinkedHashMap<String, Object>) obj;
 			checkpoints.add(new JumpAndRunCheckpoint(
-				checkpointSection.getInt("x"),
-				checkpointSection.getInt("y"),
-				checkpointSection.getInt("z"),
-				(float) checkpointSection.getDouble("yaw"),
-				(float) checkpointSection.getDouble("pitch"),
-				checkpointSection.getStringList("commands"),
-				checkpointSection.getDouble("money")));
+				(int) hashMap.get("x"),
+				(int) hashMap.get("y"),
+				(int) hashMap.get("z"),
+				(float) (double) hashMap.get("yaw"),
+				(float) (double) hashMap.get("pitch"),
+				(List<String>) hashMap.get("commands"),
+				(double) hashMap.get("money")));
 		}
 
 		ConfigurationSection highscoreSection = cfg.getConfigurationSection("highscores");
@@ -143,29 +143,29 @@ public class JumpAndRunLoader {
 
 	public void saveJumpAndRunPlayer(@NotNull JumpAndRunPlayer player) {
 		Bukkit.getScheduler().runTaskAsynchronously(JumpAndRunPlugin.getInstance(), () -> {
+			YamlConfiguration cfg = new YamlConfiguration();
+			ConfigurationSection checkpointsSection = cfg.createSection("checkpoints");
+			ConfigurationSection reachedCheckpointsSection = cfg.createSection("reachedCheckpoints");
+			ConfigurationSection runTimestampsSection = cfg.createSection("runTimestamps");
+
+			player.getCheckPoints().forEach(checkpointsSection::set);
+			player.getReachedCheckpoints().forEach(reachedCheckpointsSection::set);
+			player.getRunTimestamps().forEach(runTimestampsSection::set);
+
+			try {
+				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				GZIPOutputStream os = new GZIPOutputStream(bos);
+				os.write(cfg.saveToString().getBytes(StandardCharsets.UTF_8));
+				os.close();
+				byte[] data = bos.toByteArray();
+				PreparedStatement ps = db.prepareStatement("REPLACE INTO players VALUES(?, ?)");
+				ps.setString(1, player.getUuid().toString());
+				ps.setBlob(2, new ByteArrayInputStream(data));
+				ps.executeUpdate();
+			} catch (IOException | SQLException e) {
+				Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[JNR] Error while saving player: " + ChatColor.AQUA + player.getUuid());
+			}
 		});
-		YamlConfiguration cfg = new YamlConfiguration();
-		ConfigurationSection checkpointsSection = cfg.createSection("checkpoints");
-		ConfigurationSection reachedCheckpointsSection = cfg.createSection("reachedCheckpoints");
-		ConfigurationSection runTimestampsSection = cfg.createSection("runTimestamps");
-
-		player.getCheckPoints().forEach(checkpointsSection::set);
-		player.getReachedCheckpoints().forEach(reachedCheckpointsSection::set);
-		player.getRunTimestamps().forEach(runTimestampsSection::set);
-
-		try {
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			GZIPOutputStream os = new GZIPOutputStream(bos);
-			os.write(cfg.saveToString().getBytes(StandardCharsets.UTF_8));
-			os.close();
-			byte[] data = bos.toByteArray();
-			PreparedStatement ps = db.prepareStatement("REPLACE INTO players VALUES(?, ?)");
-			ps.setString(1, player.getUuid().toString());
-			ps.setBlob(2, new ByteArrayInputStream(data));
-			ps.executeUpdate();
-		} catch (IOException | SQLException e) {
-			Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[JNR] Error while saving player: " + ChatColor.AQUA + player.getUuid());
-		}
 	}
 
 	@Nullable

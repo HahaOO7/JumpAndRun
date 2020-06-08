@@ -1,7 +1,5 @@
 package at.haha007.minigames.jumpandrun;
 
-import java.util.*;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -19,6 +17,9 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listener {
@@ -68,7 +69,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 				sender.sendMessage(ChatColor.RED + "Du benötigst ein JNR tool in der Hand.");
 				return true;
 			}
-			String cmd = Utils.combineStrings(1, args.length, args);
+			String cmd = Utils.combineStrings(1, args.length - 1, args);
 			JumpAndRun jnr = editor.getJumpAndRun(item);
 			if (jnr == null)
 				return true;
@@ -76,6 +77,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 			jnr.getCheckpoint(cp).getCommands().add(cmd);
 			JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
 			sender.sendMessage(ChatColor.GOLD + "Command hinzugefügt");
+			return true;
 		}
 		openMainJnrMenu((Player) sender, 0);
 		return true;
@@ -85,12 +87,12 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 	public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
 		if (args.length == 1) {
 			List<String> cmds = new ArrayList<>(Arrays.asList("create", "addcmd"));
-			return Arrays.asList((String[]) cmds.stream().filter(str -> str.toLowerCase().startsWith(args[0])).toArray());
+			return cmds.stream().filter(str -> str.toLowerCase().startsWith(args[0])).collect(Collectors.toList());
 		}
 		return null;
 	}
 
-	void openMainJnrMenu(Player player, int page) {
+	private void openMainJnrMenu(Player player, int page) {
 		Inventory inv = Bukkit.createInventory(null, 54, titleMainMenu);
 		List<JumpAndRun> jnrList = Arrays.asList(JumpAndRunPlugin.getJumpAndRuns().toArray(new JumpAndRun[0]));
 		if (page > jnrList.size() / 45)
@@ -152,25 +154,60 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 					JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(jnrName);
 					if (jnr == null)
 						break;
-					openCheckpointMenu((Player) event.getWhoClicked(), jnr);
+					openJnrMenu((Player) event.getWhoClicked(), jnr, 0);
 				}
 				break;
 		}
 	}
 
-	void openCheckpointMenu(Player player, JumpAndRun jnr) {
+	private void openJnrMenu(Player player, JumpAndRun jnr, int page) {
 		Inventory inv = Bukkit.createInventory(null, 54, titleCheckpointMenu);
-		for (int i = 0; i < jnr.size(); i++) {
-			jnr.getCheckpoint(i);
-			System.out.println("DU HAST WAS VERGESSEN!");
+		if (page < 0) page = jnr.size() / 45;
+		if (page > jnr.size() / 45) page = 0;
+		int reached = JumpAndRunPlugin.getPlayer(player.getUniqueId()).getMaxCheckpoint(jnr);
+		for (int i = 0; i < 45; i++) {
+			int cpIndex = i + 54 * page;
+			JumpAndRunCheckpoint cp = jnr.getCheckpoint(cpIndex);
+			if (cp == null) break;
+			ItemStack cpItem = Utils.setNbtInt(Utils.getItem(cpIndex > reached ? Material.DIRT : Material.GRASS_BLOCK, ChatColor.GOLD + "CP " + cpIndex), "index", cpIndex);
+			inv.setItem(i, cpItem);
 		}
+
+		inv.setItem(49, Utils.setNbtInt(JumpAndRunPlugin.getEditor().getEditorTool(jnr, 0), "page", page));
+
+		inv.setItem(45, getArrowLeft());
+		inv.setItem(53, getArrowRight());
+
 		player.openInventory(inv);
 	}
 
 	private void handleCheckpointMenuClick(InventoryClickEvent event) {
 		event.setCancelled(true);
 		if (event.getClickedInventory() != event.getView().getTopInventory()) return;
-		System.out.println("DU HAST WAS VERGESSEN!");
+		int page = Utils.getNbtInt(event.getInventory().getItem(49), "page");
+		ItemStack tool = event.getInventory().getItem(49);
+		if (tool == null) return;
+		JumpAndRun jnr = JumpAndRunPlugin.getEditor().getJumpAndRun(tool);
+
+		switch (event.getSlot()) {
+			case 53:
+				openJnrMenu((Player) event.getWhoClicked(), jnr, page + 1);
+				break;
+			case 45:
+				openJnrMenu((Player) event.getWhoClicked(), jnr, page - 1);
+				break;
+			default:
+				if (event.getSlot() >= 45)
+					break;
+				ItemStack cpItem = event.getCurrentItem();
+				if (cpItem == null) break;
+				if (cpItem.getType() == Material.DIRT) break;
+				int cp = Utils.getNbtInt(cpItem, "index");
+				JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayer(event.getWhoClicked().getUniqueId());
+				jnrPlayer.setActiveJnr(jnr);
+				jnrPlayer.setCheckpoint(jnr, cp);
+				break;
+		}
 	}
 
 	@EventHandler

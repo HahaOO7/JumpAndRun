@@ -13,7 +13,7 @@ public class JumpAndRunPlayer {
 	private final HashMap<String, Integer> checkPoints;
 	private final HashMap<String, Integer> reachedCheckpoints;
 	private final HashMap<String, Long> runTimestamps;
-	private final JumpAndRun activeJumpAndRun;
+	private JumpAndRun activeJumpAndRun;
 	private final UUID uuid;
 
 	public JumpAndRunPlayer(HashMap<String, Integer> checkPoints, HashMap<String, Integer> reachedCheckpoints, HashMap<String, Long> runTimestamps, JumpAndRun activeJumpAndRun, UUID uuid) {
@@ -98,6 +98,18 @@ public class JumpAndRunPlayer {
 		}
 	}
 
+	public void setActiveJnr(JumpAndRun jnr) {
+		activeJumpAndRun = jnr;
+	}
+
+	public void setCheckpoint(JumpAndRun jnr, int checkpoint) {
+		checkPoints.put(jnr.getName(), checkpoint);
+	}
+
+	public int getMaxCheckpoint(JumpAndRun jnr) {
+		return reachedCheckpoints.getOrDefault(jnr.getName(), 0);
+	}
+
 	private JumpAndRunCheckpoint getActiveCheckpoint() {
 		return activeJumpAndRun.getCheckpoint(checkPoints.getOrDefault(activeJumpAndRun.getName(), 0));
 	}
@@ -117,4 +129,5 @@ public class JumpAndRunPlayer {
 	public HashMap<String, Long> getRunTimestamps() {
 		return runTimestamps;
 	}
+
 }
