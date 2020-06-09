@@ -2,6 +2,8 @@ package at.haha007.minigames.jumpandrun;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -17,13 +19,13 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public class JumpAndRunLoader {
-	File jnrFolder = new File(JumpAndRunPlugin.getInstance().getDataFolder(), "JumpAndRuns");
-	SqliteDB db;
+	private File jnrFolder = new File(JumpAndRunPlugin.getInstance().getDataFolder(), "JumpAndRuns");
+	private SqliteDB db;
 
 	public JumpAndRunLoader() {
 		try {
 			db = new SqliteDB("jdbc:sqlite:plugins/JumpAndRun/jnrPlayers.db");
-			db.executeStmt("create table if not exists players (uuid VARCHAR(36), data blob(256))");
+			db.executeStmt("create table if not exists players (uuid VARCHAR(36), data blob(256), PRIMARY KEY (uuid))");
 		} catch (SQLException exception) {
 			exception.printStackTrace();
 		}
@@ -38,8 +40,11 @@ public class JumpAndRunLoader {
 		File[] jnrFiles = jnrFolder.listFiles();
 		HashSet<JumpAndRun> jnrs = new HashSet<>();
 		for (File jnrFile : jnrFiles) {
-			jnrs.add(loadJumpAndRun(jnrFile));
+			JumpAndRun jnr = loadJumpAndRun(jnrFile);
+			if (jnr != null)
+				jnrs.add(jnr);
 		}
+
 		return jnrs;
 	}
 
@@ -74,14 +79,31 @@ public class JumpAndRunLoader {
 		if (highscoreSection != null)
 			highscoreSection.getKeys(false).forEach(key -> highScores.put(UUID.fromString(key), highscoreSection.getLong(key)));
 
-		return new JumpAndRun(name, Bukkit.getWorld(world), checkpoints, highScores);
+		World w = Bukkit.getWorld(world);
+		Location loc = new Location(w,
+			cfg.getDouble("x"),
+			cfg.getDouble("y"),
+			cfg.getDouble("z"),
+			(float) cfg.getDouble("yaw"),
+			(float) cfg.getDouble("pitch"));
+
+
+		return new JumpAndRun(name, loc, checkpoints, highScores);
 	}
 
 	public void saveJumpAndRun(JumpAndRun jnr) {
 		File file = new File(jnrFolder, jnr.getName() + ".yml");
 		YamlConfiguration cfg = new YamlConfiguration();
+
+		Location loc = jnr.getLeavePoint();
 		cfg.set("name", jnr.getName());
 		cfg.set("world", jnr.getWorld().getName());
+		cfg.set("x", loc.getX());
+		cfg.set("y", loc.getY());
+		cfg.set("z", loc.getZ());
+		cfg.set("yaw", loc.getYaw());
+		cfg.set("pitch", loc.getPitch());
+
 		jnr.getHighscores().forEach((uuid, time) -> cfg.set("highscores." + uuid.toString(), time));
 		List<ConfigurationSection> checkpoints = new ArrayList<>(jnr.size());
 		jnr.getCheckpoints().forEach((checkpoint) -> {
@@ -103,6 +125,7 @@ public class JumpAndRunLoader {
 		}
 	}
 
+	@NotNull
 	public JumpAndRunPlayer loadJumpAndRunPlayer(@NotNull UUID uuid) {
 		YamlConfiguration cfg;
 		HashMap<String, Integer> checkpoints = new HashMap<>();
@@ -117,14 +140,15 @@ public class JumpAndRunLoader {
 				cfg = new YamlConfiguration();
 			} else {
 				BufferedReader reader =
-					new BufferedReader(new InputStreamReader(new GZIPInputStream(rs.getBlob(1).getBinaryStream()), StandardCharsets.UTF_8));
+					new BufferedReader(new InputStreamReader(new GZIPInputStream(new ByteArrayInputStream(rs.getBytes(1))), StandardCharsets.UTF_8));
 				StringBuilder sb = new StringBuilder();
-				reader.lines().forEach(sb::append);
+				reader.lines().forEach(str -> sb.append(str + System.lineSeparator()));
 				reader.close();
 				cfg = YamlConfiguration.loadConfiguration(new StringReader(sb.toString()));
 			}
 		} catch (SQLException | IOException exception) {
-			return null;
+			exception.printStackTrace();
+			cfg = new YamlConfiguration();
 		}
 
 		ConfigurationSection checkpointsSection = cfg.getConfigurationSection("checkpoints");
@@ -160,9 +184,10 @@ public class JumpAndRunLoader {
 				byte[] data = bos.toByteArray();
 				PreparedStatement ps = db.prepareStatement("REPLACE INTO players VALUES(?, ?)");
 				ps.setString(1, player.getUuid().toString());
-				ps.setBlob(2, new ByteArrayInputStream(data));
+				ps.setBytes(2, data);
 				ps.executeUpdate();
 			} catch (IOException | SQLException e) {
+				e.printStackTrace();
 				Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[JNR] Error while saving player: " + ChatColor.AQUA + player.getUuid());
 			}
 		});
@@ -177,4 +202,7 @@ public class JumpAndRunLoader {
 		return null;
 	}
 
+	public void delete(JumpAndRun jnr) {
+		new File(jnrFolder, jnr.getName() + ".yml").delete();
+	}
 }

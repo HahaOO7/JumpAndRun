@@ -4,10 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
+import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -26,18 +23,52 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 	//	private final String titleCreateJnr = ChatColor.GREEN + "Create JNR";
 	private final String titleMainMenu = ChatColor.GREEN + "JNR menu";
 	private final String titleCheckpointMenu = ChatColor.GREEN + "JNR Checkpoint Menu";
-
-	// create jnr
-	// get jnr tool
-	// teleport to jnr
+	private final String[] explanation = {
+		ChatColor.DARK_AQUA + "Leftclick a JNR to open its Inventory.",
+		ChatColor.DARK_AQUA + "Rightclick a JNR to get the JNR tool.",
+		ChatColor.DARK_AQUA + "Shift+Scroll to select the wantet Checkpoint.",
+		ChatColor.DARK_AQUA + "Rightclick with the tool to ad a checkpoint",
+		ChatColor.DARK_AQUA + "  in between the red and the blue checkpoint.",
+		ChatColor.DARK_AQUA + "Leftclick with the tool to edit the blue Checkpoint",
+		ChatColor.DARK_AQUA + "Player Commands:",
+		ChatColor.DARK_AQUA + "Add a command at blue Checkpoint: ",
+		ChatColor.AQUA + "  /jnr addcmd <cmd>",
+		ChatColor.AQUA + "  Use %player% for the JNR player.",
+		ChatColor.DARK_AQUA + "Create a new JNR: ",
+		ChatColor.AQUA + "  /jnr create <name>",
+		ChatColor.DARK_AQUA + "Delete an existing JNR: ",
+		ChatColor.AQUA + "  /jnr delete <name>",
+		ChatColor.DARK_AQUA + "CommandBlock:",
+		ChatColor.DARK_AQUA + "Start JNR: ",
+		ChatColor.AQUA + "  /jnr <name> <radius>"
+	};
 
 	@Override
 	public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
-		if (!(sender instanceof Player))
-			return false;
-		if (!sender.hasPermission("jnr.command.execute"))
-			return false;
+		if (!(sender instanceof Player)) {
+			if (!(sender instanceof BlockCommandSender))
+				return false;
+			BlockCommandSender block = (BlockCommandSender) sender;
+			JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(args[0]);
+			if (jnr == null) return false;
+			double radius;
+			try {
+				radius = Double.parseDouble(args[1]);
+			} catch (NumberFormatException e) {
+				return false;
+			}
+			Collection<Player> players = block.getBlock().getLocation().getNearbyPlayers(radius);
+			players.forEach(player -> JumpAndRunPlugin.startJumpAndRun(jnr, player));
+			return true;
+		}
 		Player player = (Player) sender;
+
+		if (args.length == 2 && args[0].equalsIgnoreCase("delete")) {
+			boolean found = JumpAndRunPlugin.delete(args[1]);
+			if (!found) sender.sendMessage(ChatColor.RED + "[JNR] JumpAndRun wurde nicht gefunden.");
+			else sender.sendMessage(ChatColor.GOLD + "[JNR] JumpAndRun wurde entfernt.");
+			return true;
+		}
 		if (args.length == 2 && args[0].equalsIgnoreCase("create")) {
 			if (JumpAndRunPlugin.getJumpAndRun(args[1]) != null) {
 				sender.sendMessage(ChatColor.RED + "Dieses JNR existiert bereits.");
@@ -46,7 +77,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 			Location loc = player.getLocation();
 			JumpAndRun jnr = new JumpAndRun(
 				ChatColor.translateAlternateColorCodes('&', args[1]),
-				player.getWorld(),
+				loc,
 				Collections.singletonList(
 					new JumpAndRunCheckpoint(
 						loc.getBlockX(),
@@ -60,6 +91,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 			JumpAndRunPlugin.getJumpAndRuns().add(jnr);
 			JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
 			sender.sendMessage(ChatColor.GOLD + "JNR erstellt.");
+
 			return true;
 		}
 		if (args.length > 1 && args[0].equalsIgnoreCase("addcmd")) {
@@ -85,11 +117,18 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 
 	@Override
 	public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
+		if (sender instanceof BlockCommandSender) {
+			if (args.length == 1)
+				return JumpAndRunPlugin.getJumpAndRuns().stream().map(JumpAndRun::getName).filter(str -> str.toLowerCase().startsWith(args[0])).collect(Collectors.toList());
+		}
 		if (args.length == 1) {
-			List<String> cmds = new ArrayList<>(Arrays.asList("create", "addcmd"));
+			List<String> cmds = new ArrayList<>(Arrays.asList("create", "addcmd", "delete"));
 			return cmds.stream().filter(str -> str.toLowerCase().startsWith(args[0])).collect(Collectors.toList());
 		}
-		return null;
+		if (args.length == 2 && args[0].equalsIgnoreCase("delete"))
+			return JumpAndRunPlugin.getJumpAndRuns().stream().map(JumpAndRun::getName).filter(str -> str.toLowerCase().startsWith(args[1])).collect(Collectors.toList());
+
+		return Collections.emptyList();
 	}
 
 	private void openMainJnrMenu(Player player, int page) {
@@ -116,6 +155,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 
 		// next page, create jnr etc last line
 		inv.setItem(45, getArrowLeft());
+		inv.setItem(46, Utils.getItem(Material.BOOK, "Explanation", explanation));
 		inv.setItem(53, getArrowRight());
 		player.openInventory(inv);
 	}
@@ -128,6 +168,11 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 		switch (event.getSlot()) {
 			case 45:
 				openMainJnrMenu((Player) event.getWhoClicked(), page - 1);
+				break;
+			case 46:
+				for (String str : explanation) {
+					event.getWhoClicked().sendMessage(ChatColor.GOLD + "[JNR] " + str);
+				}
 				break;
 			case 53:
 				openMainJnrMenu((Player) event.getWhoClicked(), page + 1);
@@ -143,8 +188,8 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 					JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(jnrName);
 					if (jnr == null)
 						break;
-					Utils.giveItem((Player) event.getWhoClicked(),
-						JumpAndRunPlugin.getEditor().getEditorTool(jnr, jnr.size()));
+					Utils.giveItem((Player) event.getWhoClicked(), JumpAndRunPlugin.getEditor().getEditorTool(jnr, jnr.size()));
+					JumpAndRunPlugin.getEditor().displayPath((Player) event.getWhoClicked(), jnr, 0);
 				} else if (event.getClick() == ClickType.LEFT) {
 					ItemStack item = event.getCurrentItem();
 					if (item == null)
@@ -160,11 +205,12 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 		}
 	}
 
-	private void openJnrMenu(Player player, JumpAndRun jnr, int page) {
+	public void openJnrMenu(Player player, JumpAndRun jnr, int page) {
 		Inventory inv = Bukkit.createInventory(null, 54, titleCheckpointMenu);
 		if (page < 0) page = jnr.size() / 45;
 		if (page > jnr.size() / 45) page = 0;
-		int reached = JumpAndRunPlugin.getPlayer(player.getUniqueId()).getMaxCheckpoint(jnr);
+		JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayer(player.getUniqueId());
+		int reached = jnrPlayer.getMaxCheckpoint(jnr);
 		for (int i = 0; i < 45; i++) {
 			int cpIndex = i + 54 * page;
 			JumpAndRunCheckpoint cp = jnr.getCheckpoint(cpIndex);
@@ -173,25 +219,40 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 			inv.setItem(i, cpItem);
 		}
 
-		inv.setItem(49, Utils.setNbtInt(JumpAndRunPlugin.getEditor().getEditorTool(jnr, 0), "page", page));
+		ItemStack editorTool = JumpAndRunPlugin.getEditor().getEditorTool(jnr, 0);
+		ItemMeta itemMeta = editorTool.getItemMeta();
+		List<String> lore = itemMeta.getLore();
+		lore.add(ChatColor.AQUA + "Set leave spawnpoint.");
+		itemMeta.setLore(lore);
+		editorTool.setItemMeta(itemMeta);
+		if (player.hasPermission("jnr.command.use"))
+			inv.setItem(49, Utils.setNbtInt(editorTool, "page", page));
+		ItemStack left = Utils.setNbtString(Utils.setNbtInt(getArrowLeft(), "page", page), "jnr", jnr.getName());
 
-		inv.setItem(45, getArrowLeft());
+		inv.setItem(45, left);
 		inv.setItem(53, getArrowRight());
 
 		player.openInventory(inv);
 	}
 
-	private void handleCheckpointMenuClick(InventoryClickEvent event) {
+	private void handleJnrMenuClick(InventoryClickEvent event) {
 		event.setCancelled(true);
 		if (event.getClickedInventory() != event.getView().getTopInventory()) return;
-		int page = Utils.getNbtInt(event.getInventory().getItem(49), "page");
-		ItemStack tool = event.getInventory().getItem(49);
-		if (tool == null) return;
-		JumpAndRun jnr = JumpAndRunPlugin.getEditor().getJumpAndRun(tool);
+		int page = Utils.getNbtInt(event.getInventory().getItem(45), "page");
+		JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(Utils.getNbtString(event.getInventory().getItem(45), "jnr"));
+		if (jnr == null) {
+			event.getWhoClicked().closeInventory();
+			return;
+		}
 
 		switch (event.getSlot()) {
 			case 53:
 				openJnrMenu((Player) event.getWhoClicked(), jnr, page + 1);
+				break;
+			case 49:
+				if (!event.getWhoClicked().hasPermission("jnr.command.use")) break;
+				jnr.setLeavePoint(event.getWhoClicked().getLocation());
+				JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
 				break;
 			case 45:
 				openJnrMenu((Player) event.getWhoClicked(), jnr, page - 1);
@@ -203,9 +264,14 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 				if (cpItem == null) break;
 				if (cpItem.getType() == Material.DIRT) break;
 				int cp = Utils.getNbtInt(cpItem, "index");
-				JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayer(event.getWhoClicked().getUniqueId());
-				jnrPlayer.setActiveJnr(jnr);
-				jnrPlayer.setCheckpoint(jnr, cp);
+				JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayerIfActive((Player) event.getWhoClicked());
+				if (jnrPlayer != null) {
+					jnrPlayer.setCheckpoint(jnr, cp);
+					jnrPlayer.respawn();
+					break;
+				}
+				JumpAndRunCheckpoint checkpoint = jnr.getCheckpoint(cp);
+				event.getWhoClicked().teleport(new Location(jnr.getWorld(), checkpoint.getPosX() + .5, checkpoint.getPosY(), checkpoint.getPosZ(), checkpoint.getYaw(), checkpoint.getPitch()));
 				break;
 		}
 	}
@@ -214,7 +280,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 	void onInventoryClick(InventoryClickEvent event) {
 		String title = event.getView().getTitle();
 		if (title.equals(titleCheckpointMenu))
-			handleCheckpointMenuClick(event);
+			handleJnrMenuClick(event);
 		else if (title.equals(titleMainMenu))
 			handleMainMenuClick(event);
 	}

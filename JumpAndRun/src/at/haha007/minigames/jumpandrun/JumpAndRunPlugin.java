@@ -19,6 +19,7 @@ public class JumpAndRunPlugin extends JavaPlugin {
 	private static HashMap<UUID, JumpAndRunPlayer> players;
 	private static JumpAndRunLoader loader;
 	private static JumpAndRunEditor editor;
+	private static JumpAndRunCommand cmd;
 	private static HashSet<JumpAndRun> jumpAndRuns;
 
 	@Override
@@ -27,18 +28,33 @@ public class JumpAndRunPlugin extends JavaPlugin {
 		instance = this;
 		if (!setupEconomy())
 			Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[JumpAndRun] Failed to connect to economy!");
-		players = new HashMap();
+		players = new HashMap<>();
 		loader = new JumpAndRunLoader();
 		editor = new JumpAndRunEditor();
 		jumpAndRuns = loader.loadAllJumpAndRuns();
 
-		JumpAndRunCommand cmd = new JumpAndRunCommand();
+		cmd = new JumpAndRunCommand();
 		getCommand("jumpandrun").setExecutor(cmd);
 		getCommand("jumpandrun").setTabCompleter(cmd);
 		getServer().getPluginManager().registerEvents(cmd, this);
 		getServer().getPluginManager().registerEvents(editor, this);
 		getServer().getPluginManager().registerEvents(new JumpAndRunListener(), this);
 	}
+
+	public static void startJumpAndRun(JumpAndRun jnr, Player player) {
+		JumpAndRunPlayer jnrPlayer =getPlayer(player);
+		jnrPlayer.setActiveJnr(jnr);
+		jnrPlayer.respawn();
+	}
+
+	public static boolean delete(String jnrName) {
+		JumpAndRun jnr = getJumpAndRun(jnrName);
+		if (jnr == null) return false;
+		jumpAndRuns.remove(jnr);
+		loader.delete(jnr);
+		return true;
+	}
+
 
 	private boolean setupEconomy() {
 		if (getServer().getPluginManager().getPlugin("Vault") == null) {
@@ -71,6 +87,13 @@ public class JumpAndRunPlugin extends JavaPlugin {
 		return p;
 	}
 
+	public static JumpAndRunPlayer getPlayerIfActive(Player player) {
+		JumpAndRunPlayer jumpAndRunPlayer = players.get(player.getUniqueId());
+		if (jumpAndRunPlayer == null) return null;
+		if (jumpAndRunPlayer.getActiveJumpAndRun() == null) return null;
+		return jumpAndRunPlayer;
+	}
+
 	public static Set<JumpAndRunPlayer> getActivePlayers() {
 		if (players.size() > Bukkit.getOnlinePlayers().size()) {
 			Set<UUID> remove = new HashSet<>();
@@ -100,5 +123,9 @@ public class JumpAndRunPlugin extends JavaPlugin {
 
 	public static JumpAndRunLoader getLoader() {
 		return loader;
+	}
+
+	public static JumpAndRunCommand getCmd() {
+		return cmd;
 	}
 }

@@ -1,5 +1,6 @@
 package at.haha007.minigames.jumpandrun;
 
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
@@ -10,16 +11,16 @@ import java.util.UUID;
 
 public class JumpAndRun {
 	private final String name;
-	private final World world;
+	Location location;
 	private final List<JumpAndRunCheckpoint> checkpoints;
 	private final HashMap<UUID, Long> highscores;
 
-	public JumpAndRun(String name, World world, List<JumpAndRunCheckpoint> checkpoints,
+	public JumpAndRun(String name, Location location, List<JumpAndRunCheckpoint> checkpoints,
 	                  HashMap<UUID, Long> highscores) {
 		this.checkpoints = checkpoints == null ? new ArrayList<>() : new ArrayList<>(checkpoints);
 		this.highscores = highscores == null ? new HashMap<>() : highscores;
 		this.name = name;
-		this.world = world;
+		this.location = location;
 	}
 
 	public void teleportToCheckpoint(Player player) {
@@ -39,7 +40,7 @@ public class JumpAndRun {
 	}
 
 	public World getWorld() {
-		return world;
+		return location.getWorld();
 	}
 
 	public JumpAndRunCheckpoint getCheckpoint(int i) {
@@ -67,4 +68,11 @@ public class JumpAndRun {
 		return -1;
 	}
 
+	public void setLeavePoint(Location location) {
+		this.location = location;
+	}
+
+	public Location getLeavePoint() {
+		return location;
+	}
 }

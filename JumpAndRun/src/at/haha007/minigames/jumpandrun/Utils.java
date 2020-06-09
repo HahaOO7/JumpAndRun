@@ -9,6 +9,7 @@ import org.bukkit.craftbukkit.libs.org.apache.commons.codec.binary.Hex;
 import org.bukkit.craftbukkit.v1_15_R1.entity.CraftPlayer;
 import org.bukkit.craftbukkit.v1_15_R1.inventory.CraftItemStack;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -69,7 +70,8 @@ public class Utils {
 	public static void giveItem(Player player, ItemStack item) {
 		HashMap<Integer, ItemStack> remaining = player.getInventory().addItem(item);
 		for (Entry<Integer, ItemStack> entry : remaining.entrySet()) {
-			player.getWorld().dropItem(player.getLocation(), entry.getValue());
+			Item entityItem = player.getWorld().dropItem(player.getLocation(), entry.getValue());
+			entityItem.setOwner(player.getUniqueId());
 		}
 	}
 

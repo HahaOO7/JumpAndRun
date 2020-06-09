@@ -133,7 +133,6 @@ public class JumpAndRunEditor implements Listener {
 		if (cpIndex >= jnr.size() || cpIndex < 0)
 			return;
 		Inventory inv = Bukkit.createInventory(null, 54, titleCpEditor);
-		inv.setItem(4, getEditorTool(jnr, cpIndex));
 		JumpAndRunCheckpoint cp = jnr.getCheckpoint(cpIndex);
 		// set yaw/pitch
 		ItemStack arrowItem = Utils.getSkull(
@@ -147,26 +146,29 @@ public class JumpAndRunEditor implements Listener {
 			ChatColor.AQUA + "Yaw:   " + ChatColor.DARK_AQUA + cp.getYaw(),
 			ChatColor.AQUA + "Pitch: " + ChatColor.DARK_AQUA + cp.getPitch()
 		)));
+		inv.setItem(0, getEditorTool(jnr, cpIndex));
 		inv.setItem(2, arrowItem);
 
+
 		// set money
-		inv.setItem(6,
+		inv.setItem(4,
 			Utils.getItem(Material.GOLD_INGOT,
 				ChatColor.GOLD + "Money Amount",
 				ChatColor.AQUA.toString() + cp.getMoney(),
 				ChatColor.AQUA + "Right Click: " + ChatColor.DARK_AQUA + "-",
 				ChatColor.AQUA + "Left Click:  " + ChatColor.DARK_AQUA + "+"));
-		inv.setItem(7,
+		inv.setItem(5,
 			Utils.getItem(Material.GOLD_INGOT,
 				ChatColor.GOLD + "Money Change",
 				ChatColor.AQUA.toString() + ChatColor.DARK_AQUA + Math.pow(10, moneyMultiplyer),
 				ChatColor.AQUA + "Multiplyer:  " + ChatColor.DARK_AQUA + moneyMultiplyer,
 				ChatColor.AQUA + "Right Click: " + ChatColor.DARK_AQUA + "-",
 				ChatColor.AQUA + "Left Click:  " + ChatColor.DARK_AQUA + "+"));
+		inv.setItem(8, Utils.getItem(Material.BARRIER, ChatColor.RED + "Delete Checkpoint"));
 		// commands
 		List<String> cmds = cp.getCommands();
 		for (int i = 0; i < cmds.size(); i++)
-			inv.setItem(i + 9, Utils.getItem(Material.PAPER, ChatColor.GOLD.toString() + cmds.get(i)));
+			inv.setItem(i + 9, Utils.getItem(Material.PAPER, ChatColor.GOLD.toString() + cmds.get(i), ChatColor.AQUA + "Click to Delete."));
 		player.openInventory(inv);
 	}
 
@@ -175,7 +177,7 @@ public class JumpAndRunEditor implements Listener {
 		if (!titleCpEditor.equals(event.getView().getTitle())) return;
 		event.setCancelled(true);
 		if (event.getClickedInventory() != event.getView().getTopInventory()) return;
-		ItemStack toolItem = event.getView().getTopInventory().getItem(4);
+		ItemStack toolItem = event.getView().getTopInventory().getItem(0);
 		if (toolItem == null) return;
 		JumpAndRun jnr = getJumpAndRun(toolItem);
 		int checkpointIndex;
@@ -188,13 +190,13 @@ public class JumpAndRunEditor implements Listener {
 				JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
 				break;
 
-			case 4:
+			case 0:
 				Location loc = new Location(jnr.getWorld(), cp.getPosX() + .5, cp.getPosY(), cp.getPosZ() + .5, cp.getYaw(), cp.getPitch());
 				event.getWhoClicked().teleport(loc);
 				break;
 
-			case 6:
-				ItemStack item = event.getInventory().getItem(7);
+			case 4:
+				ItemStack item = event.getInventory().getItem(5);
 				if (item == null) break;
 				List<String> lore = item.getItemMeta().getLore();
 				if (lore == null) break;
@@ -206,8 +208,8 @@ public class JumpAndRunEditor implements Listener {
 				JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
 				break;
 
-			case 7:
-				item = event.getInventory().getItem(7);
+			case 5:
+				item = event.getInventory().getItem(5);
 				if (item == null) break;
 				lore = item.getItemMeta().getLore();
 				if (lore == null) break;
@@ -215,13 +217,27 @@ public class JumpAndRunEditor implements Listener {
 					Integer.parseInt(lore.get(1).replaceFirst(
 						ChatColor.AQUA + "Multiplyer: {2}" + ChatColor.DARK_AQUA,
 						"")) + (event.getClick().isLeftClick() ? 1 : -1));
-
+				break;
+			case 8:
+				jnr.getCheckpoints().remove(checkpointIndex);
+				removePath((Player) event.getWhoClicked());
+				displayPath((Player) event.getWhoClicked(), jnr, checkpointIndex);
+				event.getWhoClicked().closeInventory();
+				JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
+				break;
 			default:
+				if (event.getSlot() < 9) break;
+				item = event.getCurrentItem();
+				if (item == null) break;
+				if (item.getType() != Material.PAPER) break;
+				String command = item.getItemMeta().getDisplayName().replaceFirst(ChatColor.GOLD.toString(), "");
+				cp.getCommands().removeIf(cmd -> cmd.equals(command));
 				break;
 		}
 	}
 
 	public void displayPath(Player player, JumpAndRun jnr, int selected) {
+		if (jnr == null) return;
 		int[] guardianIDs = new int[jnr.size()];
 		int[] checkpointIDs = new int[jnr.size()];
 		UUID[] uuids = new UUID[jnr.size()];

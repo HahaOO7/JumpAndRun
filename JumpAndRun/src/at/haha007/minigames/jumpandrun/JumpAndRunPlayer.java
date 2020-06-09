@@ -33,18 +33,17 @@ public class JumpAndRunPlayer {
 	}
 
 	// checks if the active checkpoint is reached
-	boolean checkActiveCheckpoint(Block block) {
+	public void checkActiveCheckpoint(Block block) {
 		if (activeJumpAndRun == null)
-			return false;
+			return;
 		if (activeJumpAndRun.getWorld() != block.getWorld())
-			return false;
-		JumpAndRunCheckpoint checkpoint = activeJumpAndRun.getCheckpoint(checkPoints.get(activeJumpAndRun.getName()) + 1);
+			return;
+		JumpAndRunCheckpoint checkpoint = activeJumpAndRun.getCheckpoint(checkPoints.getOrDefault(activeJumpAndRun.getName(), 0) + 1);
 		if (checkpoint == null)
-			return false;
+			return;
 		if (!(checkpoint.comparePosition(block.getX(), block.getY(), block.getZ())))
-			return false;
+			return;
 		reachCheckpoint();
-		return true;
 	}
 
 	public void respawn() {
@@ -62,6 +61,11 @@ public class JumpAndRunPlayer {
 			pos.getZ(),
 			cp.getYaw(),
 			cp.getPitch()));
+		fillJnrInventory();
+		player.setHealth(20);
+		player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
+		player.setFireTicks(0);
+		player.setFallDistance(0);
 	}
 
 	public void fillJnrInventory() {
@@ -69,6 +73,7 @@ public class JumpAndRunPlayer {
 		if (player == null)
 			return;
 		PlayerInventory inv = player.getInventory();
+		inv.clear();
 		inv.setItem(0, Utils.getItem(Material.YELLOW_DYE, ChatColor.YELLOW + "Respawn"));
 		inv.setItem(1, Utils.getItem(Material.ORANGE_DYE, ChatColor.YELLOW + "Checkpoints"));
 		inv.setItem(8, Utils.getItem(Material.BARRIER, ChatColor.YELLOW + "Leave"));
@@ -80,13 +85,20 @@ public class JumpAndRunPlayer {
 		int activeCheckpintIndex = checkPoints.getOrDefault(activeJumpAndRun.getName(), 0);
 		checkPoints.put(activeJumpAndRun.getName(), activeCheckpintIndex + 1);
 		int maxCheckpointIndex = reachedCheckpoints.getOrDefault(activeJumpAndRun.getName(), 0);
+		OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
+		Player player = offlinePlayer.getPlayer();
+		if (player != null) {
+			player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1f, 1f);
+			player.spawnParticle(Particle.PORTAL, player.getLocation(), 500);
+			player.sendActionBar(ChatColor.GOLD + "Checkpoint Erreicht!");
+		}
 		if (activeCheckpintIndex == maxCheckpointIndex) {
 			reachedCheckpoints.put(activeJumpAndRun.getName(), activeCheckpintIndex + 1);
 			JumpAndRunCheckpoint checkpoint = getActiveCheckpoint();
 			double money = checkpoint.getMoney();
-			OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
 			if (money > 0) {
 				JumpAndRunPlugin.getEconomy().depositPlayer(offlinePlayer, checkpoint.getMoney());
+				player.sendMessage(ChatColor.GOLD + "Du hast " + ChatColor.YELLOW + checkpoint.getMoney() + "$" + ChatColor.GOLD + " erhalten.");
 			}
 			for (String command : checkpoint.getCommands()) {
 				Bukkit.getScheduler().runTask(
@@ -96,6 +108,7 @@ public class JumpAndRunPlayer {
 						command.replaceAll("%player%", offlinePlayer.getName() == null ? "" : offlinePlayer.getName())));
 			}
 		}
+		Bukkit.getScheduler().runTaskAsynchronously(JumpAndRunPlugin.getInstance(), () -> JumpAndRunPlugin.getLoader().saveJumpAndRunPlayer(this));
 	}
 
 	public void setActiveJnr(JumpAndRun jnr) {
@@ -104,6 +117,7 @@ public class JumpAndRunPlayer {
 
 	public void setCheckpoint(JumpAndRun jnr, int checkpoint) {
 		checkPoints.put(jnr.getName(), checkpoint);
+		Bukkit.getScheduler().runTaskAsynchronously(JumpAndRunPlugin.getInstance(), () -> JumpAndRunPlugin.getLoader().saveJumpAndRunPlayer(this));
 	}
 
 	public int getMaxCheckpoint(JumpAndRun jnr) {
@@ -111,6 +125,8 @@ public class JumpAndRunPlayer {
 	}
 
 	private JumpAndRunCheckpoint getActiveCheckpoint() {
+		if (activeJumpAndRun == null)
+			return null;
 		return activeJumpAndRun.getCheckpoint(checkPoints.getOrDefault(activeJumpAndRun.getName(), 0));
 	}
 
@@ -130,4 +146,8 @@ public class JumpAndRunPlayer {
 		return runTimestamps;
 	}
 
+	public JumpAndRunCheckpoint getActiveCheckPoint() {
+		if (activeJumpAndRun == null) return null;
+		return activeJumpAndRun.getCheckpoint(checkPoints.getOrDefault(activeJumpAndRun.getName(), 0));
+	}
 }
