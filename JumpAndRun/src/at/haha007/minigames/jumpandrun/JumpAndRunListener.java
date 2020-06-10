@@ -1,5 +1,7 @@
 package at.haha007.minigames.jumpandrun;
 
+import at.haha007.minigames.jumpandrun.events.StopJnrEvent;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -34,9 +36,13 @@ public class JumpAndRunListener implements Listener {
 				break;
 			case 8:
 				jnr = jnrPlayer.getActiveJumpAndRun();
+
+				StopJnrEvent e = new StopJnrEvent(event.getPlayer(), jnr, false);
+				Bukkit.getPluginManager().callEvent(e);
+
+				jnrPlayer.setActiveJnr(null);
 				player.teleport(jnr.getLeavePoint());
 				player.getInventory().clear();
-				jnrPlayer.setActiveJnr(null);
 				break;
 			default:
 				break;
@@ -54,10 +60,15 @@ public class JumpAndRunListener implements Listener {
 	void onPlayerDisconnect(PlayerQuitEvent event) {
 		JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayerIfActive(event.getPlayer());
 		if (jnrPlayer == null) return;
+
 		JumpAndRun jnr = jnrPlayer.getActiveJumpAndRun();
+
+		StopJnrEvent e = new StopJnrEvent(event.getPlayer(), jnr, true);
+		Bukkit.getPluginManager().callEvent(e);
+
+		jnrPlayer.setActiveJnr(null);
 		event.getPlayer().teleport(jnr.getLeavePoint());
 		event.getPlayer().getInventory().clear();
-		jnrPlayer.setActiveJnr(null);
 	}
 
 	@EventHandler(priority = EventPriority.LOWEST)
@@ -70,7 +81,10 @@ public class JumpAndRunListener implements Listener {
 		Location to = event.getTo();
 		if (to.getWorld() == jnr.getWorld() && to.toVector().distance(cp.getPos()) < 1) return;
 
-		jnrPlayer.setActiveJnr(null);
+		StopJnrEvent e = new StopJnrEvent(event.getPlayer(), jnr, true);
+		Bukkit.getPluginManager().callEvent(e);
+
 		event.getPlayer().getInventory().clear();
+		jnrPlayer.setActiveJnr(null);
 	}
 }

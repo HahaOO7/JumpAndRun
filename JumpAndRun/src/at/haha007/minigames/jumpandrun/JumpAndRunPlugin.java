@@ -1,5 +1,6 @@
 package at.haha007.minigames.jumpandrun;
 
+import at.haha007.minigames.jumpandrun.events.StartJnrEvent;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -42,17 +43,17 @@ public class JumpAndRunPlugin extends JavaPlugin {
 	}
 
 	public static void startJumpAndRun(JumpAndRun jnr, Player player) {
-		JumpAndRunPlayer jnrPlayer =getPlayer(player);
+		StartJnrEvent event = new StartJnrEvent(player, jnr);
+		Bukkit.getPluginManager().callEvent(event);
+		if (event.isCancelled()) return;
+		JumpAndRunPlayer jnrPlayer = getPlayer(player);
 		jnrPlayer.setActiveJnr(jnr);
 		jnrPlayer.respawn();
 	}
 
-	public static boolean delete(String jnrName) {
-		JumpAndRun jnr = getJumpAndRun(jnrName);
-		if (jnr == null) return false;
+	public static void delete(JumpAndRun jnr) {
 		jumpAndRuns.remove(jnr);
 		loader.delete(jnr);
-		return true;
 	}
 
 

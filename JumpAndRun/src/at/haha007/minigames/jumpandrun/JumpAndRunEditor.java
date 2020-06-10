@@ -1,5 +1,8 @@
 package at.haha007.minigames.jumpandrun;
 
+import at.haha007.minigames.jumpandrun.events.AddJnrCheckpointEvent;
+import at.haha007.minigames.jumpandrun.events.RemoveJnrCheckpointEvent;
+import at.haha007.minigames.jumpandrun.events.RemoveJnrCmdEvent;
 import net.minecraft.server.v1_15_R1.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -46,7 +49,7 @@ public class JumpAndRunEditor implements Listener {
 		}
 		if (e.getAction() == Action.RIGHT_CLICK_BLOCK) {
 			// Insert Checkpoint
-			jnr.addCheckpoint(
+			JumpAndRunCheckpoint cp =
 				new JumpAndRunCheckpoint(
 					e.getClickedBlock().getX(),
 					e.getClickedBlock().getY() + 1,
@@ -54,7 +57,11 @@ public class JumpAndRunEditor implements Listener {
 					0f,
 					0f,
 					null,
-					0d),
+					0d);
+			AddJnrCheckpointEvent addJnrCheckpointEvent = new AddJnrCheckpointEvent(jnr, cp, checkpoint, e.getPlayer());
+			Bukkit.getPluginManager().callEvent(addJnrCheckpointEvent);
+			if (addJnrCheckpointEvent.isCancelled()) return;
+			jnr.addCheckpoint(cp,
 				checkpoint);
 			e.getClickedBlock().getRelative(BlockFace.UP).setType(Material.LIGHT_WEIGHTED_PRESSURE_PLATE, false);
 			e.getPlayer().getInventory().setItemInMainHand(getEditorTool(jnr, checkpoint + 1));
@@ -130,6 +137,8 @@ public class JumpAndRunEditor implements Listener {
 	}
 
 	public void openCheckpointEditor(Player player, JumpAndRun jnr, int cpIndex, int moneyMultiplyer) {
+		if (!player.hasPermission("jnr.command.use"))
+			return;
 		if (cpIndex >= jnr.size() || cpIndex < 0)
 			return;
 		Inventory inv = Bukkit.createInventory(null, 54, titleCpEditor);
@@ -219,6 +228,11 @@ public class JumpAndRunEditor implements Listener {
 						"")) + (event.getClick().isLeftClick() ? 1 : -1));
 				break;
 			case 8:
+
+				RemoveJnrCheckpointEvent removeJnrCheckpointEvent = new RemoveJnrCheckpointEvent((Player) event.getWhoClicked(), jnr, cp, checkpointIndex);
+				Bukkit.getPluginManager().callEvent(removeJnrCheckpointEvent);
+				if (removeJnrCheckpointEvent.isCancelled()) break;
+
 				jnr.getCheckpoints().remove(checkpointIndex);
 				removePath((Player) event.getWhoClicked());
 				displayPath((Player) event.getWhoClicked(), jnr, checkpointIndex);
@@ -231,6 +245,9 @@ public class JumpAndRunEditor implements Listener {
 				if (item == null) break;
 				if (item.getType() != Material.PAPER) break;
 				String command = item.getItemMeta().getDisplayName().replaceFirst(ChatColor.GOLD.toString(), "");
+				RemoveJnrCmdEvent removeJnrCmdEvent = new RemoveJnrCmdEvent((Player) event.getWhoClicked(), jnr, cp, command);
+				Bukkit.getPluginManager().callEvent(removeJnrCmdEvent);
+				if (removeJnrCmdEvent.isCancelled()) break;
 				cp.getCommands().removeIf(cmd -> cmd.equals(command));
 				break;
 		}

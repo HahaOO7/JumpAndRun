@@ -1,5 +1,8 @@
 package at.haha007.minigames.jumpandrun;
 
+import at.haha007.minigames.jumpandrun.events.AddJnrCmdEvent;
+import at.haha007.minigames.jumpandrun.events.CreateJnrEvent;
+import at.haha007.minigames.jumpandrun.events.DeleteJnrEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -64,9 +67,19 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 		Player player = (Player) sender;
 
 		if (args.length == 2 && args[0].equalsIgnoreCase("delete")) {
-			boolean found = JumpAndRunPlugin.delete(args[1]);
-			if (!found) sender.sendMessage(ChatColor.RED + "[JNR] JumpAndRun wurde nicht gefunden.");
-			else sender.sendMessage(ChatColor.GOLD + "[JNR] JumpAndRun wurde entfernt.");
+
+			JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(args[1]);
+			if (jnr == null) {
+				sender.sendMessage(ChatColor.RED + "[JNR] JumpAndRun wurde nicht gefunden.");
+				return true;
+			}
+
+			DeleteJnrEvent deleteJnrEvent = new DeleteJnrEvent(player, jnr);
+			Bukkit.getPluginManager().callEvent(deleteJnrEvent);
+			if (deleteJnrEvent.isCancelled()) return true;
+
+			JumpAndRunPlugin.delete(jnr);
+			sender.sendMessage(ChatColor.GOLD + "[JNR] JumpAndRun wurde entfernt.");
 			return true;
 		}
 		if (args.length == 2 && args[0].equalsIgnoreCase("create")) {
@@ -88,6 +101,11 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 						null,
 						0d)),
 				new HashMap<>());
+
+			CreateJnrEvent createJnrEvent = new CreateJnrEvent(player, jnr);
+			Bukkit.getPluginManager().callEvent(createJnrEvent);
+			if (createJnrEvent.isCancelled()) return true;
+
 			JumpAndRunPlugin.getJumpAndRuns().add(jnr);
 			JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
 			sender.sendMessage(ChatColor.GOLD + "JNR erstellt.");
@@ -106,7 +124,14 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 			if (jnr == null)
 				return true;
 			int cp = editor.getCheckpoint(item);
-			jnr.getCheckpoint(cp).getCommands().add(cmd);
+			JumpAndRunCheckpoint checkpoint = jnr.getCheckpoint(cp);
+
+			AddJnrCmdEvent addJnrCmdEvent = new AddJnrCmdEvent(player, jnr, checkpoint, cmd);
+			Bukkit.getPluginManager().callEvent(addJnrCmdEvent);
+			if (addJnrCmdEvent.isCancelled()) return true;
+			cmd = addJnrCmdEvent.getCommand();
+
+			checkpoint.getCommands().add(cmd);
 			JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
 			sender.sendMessage(ChatColor.GOLD + "Command hinzugefügt");
 			return true;
