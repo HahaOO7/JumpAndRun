@@ -2,13 +2,12 @@ package at.haha007.minigames.jumpandrun;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
-import net.minecraft.server.v1_15_R1.Packet;
+import net.minecraft.server.v1_16_R1.Packet;
 import org.bukkit.Material;
 import org.bukkit.craftbukkit.libs.org.apache.commons.codec.DecoderException;
 import org.bukkit.craftbukkit.libs.org.apache.commons.codec.binary.Hex;
-import org.bukkit.craftbukkit.v1_15_R1.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_15_R1.inventory.CraftItemStack;
-import org.bukkit.enchantments.Enchantment;
+import org.bukkit.craftbukkit.v1_16_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_16_R1.inventory.CraftItemStack;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -22,7 +21,7 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -59,13 +58,13 @@ public class Utils {
 		return getItem(material, name, Arrays.asList(lore));
 	}
 
-	public static ItemStack addGlow(ItemStack item) {
-		ItemMeta meta = item.getItemMeta();
-		meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
-		meta.addEnchant(Enchantment.VANISHING_CURSE, 1, true);
-		item.setItemMeta(meta);
-		return item;
-	}
+//	public static ItemStack addGlow(ItemStack item) {
+//		ItemMeta meta = item.getItemMeta();
+//		meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
+//		meta.addEnchant(Enchantment.VANISHING_CURSE, 1, true);
+//		item.setItemMeta(meta);
+//		return item;
+//	}
 
 	public static void giveItem(Player player, ItemStack item) {
 		HashMap<Integer, ItemStack> remaining = player.getInventory().addItem(item);
@@ -89,7 +88,7 @@ public class Utils {
 	}
 
 	public static ItemStack setNbtString(ItemStack item, String name, String value) {
-		net.minecraft.server.v1_15_R1.ItemStack nmsItem = CraftItemStack.asNMSCopy(item);
+		net.minecraft.server.v1_16_R1.ItemStack nmsItem = CraftItemStack.asNMSCopy(item);
 		nmsItem.getOrCreateTag().setString(name, value);
 		return CraftItemStack.asCraftMirror(nmsItem);
 	}
@@ -99,7 +98,7 @@ public class Utils {
 	}
 
 	public static ItemStack setNbtInt(ItemStack item, String name, int value) {
-		net.minecraft.server.v1_15_R1.ItemStack nmsItem = CraftItemStack.asNMSCopy(item);
+		net.minecraft.server.v1_16_R1.ItemStack nmsItem = CraftItemStack.asNMSCopy(item);
 		nmsItem.getOrCreateTag().setInt(name, value);
 		return CraftItemStack.asCraftMirror(nmsItem);
 	}
@@ -131,14 +130,10 @@ public class Utils {
 	}
 
 	public static JSONObject readJsonFromUrl(String url) throws IOException, ParseException {
-		InputStream is = new URL(url).openStream();
-		try {
-			BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+		try (InputStream is = new URL(url).openStream()) {
+			BufferedReader rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 			String jsonText = readAll(rd);
-			JSONObject json = (JSONObject) new JSONParser().parse(jsonText);
-			return json;
-		} finally {
-			is.close();
+			return (JSONObject) new JSONParser().parse(jsonText);
 		}
 	}
 

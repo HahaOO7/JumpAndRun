@@ -3,7 +3,7 @@ package at.haha007.minigames.jumpandrun;
 import at.haha007.minigames.jumpandrun.events.AddJnrCheckpointEvent;
 import at.haha007.minigames.jumpandrun.events.RemoveJnrCheckpointEvent;
 import at.haha007.minigames.jumpandrun.events.RemoveJnrCmdEvent;
-import net.minecraft.server.v1_15_R1.*;
+import net.minecraft.server.v1_16_R1.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
