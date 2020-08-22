@@ -1,13 +1,15 @@
 package at.haha007.minigames.jumpandrun;
 
+import net.minecraft.server.v1_16_R1.Items;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 import java.util.UUID;
+
+import static at.haha007.minigames.jumpandrun.Utils.*;
 
 public class JumpAndRunPlayer {
 	private final HashMap<String, Integer> checkPoints;
@@ -61,22 +63,25 @@ public class JumpAndRunPlayer {
 			pos.getZ(),
 			cp.getYaw(),
 			cp.getPitch()));
-		fillJnrInventory();
 		player.setHealth(20);
+		player.setFoodLevel(20);
 		player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
 		player.setFireTicks(0);
 		player.setFallDistance(0);
+		Bukkit.getScheduler().runTaskLater(JumpAndRunPlugin.getInstance(), this::fillJnrInventory, 1);
 	}
 
 	public void fillJnrInventory() {
 		Player player = Bukkit.getPlayer(uuid);
 		if (player == null)
 			return;
-		PlayerInventory inv = player.getInventory();
-		inv.clear();
-		inv.setItem(0, Utils.getItem(Material.YELLOW_DYE, ChatColor.YELLOW + "Respawn"));
-		inv.setItem(1, Utils.getItem(Material.ORANGE_DYE, ChatColor.YELLOW + "Checkpoints"));
-		inv.setItem(8, Utils.getItem(Material.BARRIER, ChatColor.YELLOW + "Leave"));
+
+		for (int i = 0; i < 9; i++) {
+			sendFakeItemChange(i, Items.AIR.r(), player);
+		}
+		sendFakeItemChange(0, getNmsStack(getItem(Material.YELLOW_DYE, ChatColor.YELLOW + "Respawn")), player);
+		sendFakeItemChange(1, getNmsStack(getItem(Material.ORANGE_DYE, ChatColor.YELLOW + "Checkpoints")), player);
+		sendFakeItemChange(8, getNmsStack(getItem(Material.BARRIER, ChatColor.YELLOW + "Leave")), player);
 	}
 
 	private void reachCheckpoint() {

@@ -258,6 +258,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 		inv.setItem(53, getArrowRight());
 
 		player.openInventory(inv);
+		Bukkit.getScheduler().runTaskLater(JumpAndRunPlugin.getInstance(), jnrPlayer::fillJnrInventory, 1);
 	}
 
 	private void handleJnrMenuClick(InventoryClickEvent event) {

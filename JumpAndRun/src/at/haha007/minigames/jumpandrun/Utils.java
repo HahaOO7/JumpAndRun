@@ -3,6 +3,7 @@ package at.haha007.minigames.jumpandrun;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import net.minecraft.server.v1_16_R1.Packet;
+import net.minecraft.server.v1_16_R1.PacketPlayOutSetSlot;
 import org.bukkit.Material;
 import org.bukkit.craftbukkit.libs.org.apache.commons.codec.DecoderException;
 import org.bukkit.craftbukkit.libs.org.apache.commons.codec.binary.Hex;
@@ -58,13 +59,29 @@ public class Utils {
 		return getItem(material, name, Arrays.asList(lore));
 	}
 
-//	public static ItemStack addGlow(ItemStack item) {
-//		ItemMeta meta = item.getItemMeta();
-//		meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
-//		meta.addEnchant(Enchantment.VANISHING_CURSE, 1, true);
-//		item.setItemMeta(meta);
-//		return item;
-//	}
+	public static net.minecraft.server.v1_16_R1.ItemStack getNmsStack(ItemStack itemStack) {
+		return CraftItemStack.asNMSCopy(itemStack);
+	}
+
+	public static ItemStack addGlow(ItemStack item) {
+		ItemMeta meta = item.getItemMeta();
+		meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
+		item.setItemMeta(meta);
+		return item;
+	}
+
+	public static void setField(Object object, String fieldName, Object value) {
+		try {
+			Class clazz = object.getClass();
+			Field field = clazz.getDeclaredField(fieldName);
+			boolean a = field.isAccessible();
+			field.setAccessible(true);
+			field.set(object, value);
+			field.setAccessible(a);
+		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
+			e.printStackTrace();
+		}
+	}
 
 	public static void giveItem(Player player, ItemStack item) {
 		HashMap<Integer, ItemStack> remaining = player.getInventory().addItem(item);
@@ -145,5 +162,26 @@ public class Utils {
 		}
 
 		return sb.toString();
+	}
+
+
+	public static void sendFakeItemChange(int slot, net.minecraft.server.v1_16_R1.ItemStack item, Player player) {
+		sendPacket(player, new PacketPlayOutSetSlot(0, dataSlotToNetworkSlot(slot), item));
+	}
+
+	public static int dataSlotToNetworkSlot(int index) {
+		if (index <= 8)
+			index += 36;
+		else if (index == 100)
+			index = 8;
+		else if (index == 101)
+			index = 7;
+		else if (index == 102)
+			index = 6;
+		else if (index == 103)
+			index = 5;
+		else if (index >= 80 && index <= 83)
+			index -= 79;
+		return index;
 	}
 }

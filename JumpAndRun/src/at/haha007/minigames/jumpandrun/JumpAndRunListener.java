@@ -8,7 +8,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.inventory.InventoryInteractEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -42,7 +44,6 @@ public class JumpAndRunListener implements Listener {
 
 				jnrPlayer.setActiveJnr(null);
 				player.teleport(jnr.getLeavePoint());
-				player.getInventory().clear();
 				break;
 			default:
 				break;
@@ -50,10 +51,32 @@ public class JumpAndRunListener implements Listener {
 	}
 
 	@EventHandler
-	void onInventoryInteract(InventoryInteractEvent event) {
+	void onHunger(FoodLevelChangeEvent event) {
+		if (!(event.getEntity() instanceof Player)) return;
+		Player player = (Player) event.getEntity();
+		JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayerIfActive(player);
+		if (jnrPlayer == null) return;
+		event.setCancelled(true);
+	}
+
+	@EventHandler
+	void onPlayerDamage(EntityDamageEvent event) {
+		if (!(event.getEntity() instanceof Player)) return;
+		Player player = (Player) event.getEntity();
+		JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayerIfActive(player);
+		if (jnrPlayer == null) return;
+		if (player.getHealth() >= event.getDamage()) return;
+		jnrPlayer.respawn();
+	}
+
+
+	@EventHandler
+	void onInventoryInteract(InventoryClickEvent event) {
 		JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayerIfActive((Player) event.getWhoClicked());
 		if (jnrPlayer == null) return;
 		event.setCancelled(true);
+		jnrPlayer.fillJnrInventory();
+		Bukkit.getScheduler().runTaskLater(JumpAndRunPlugin.getInstance(), jnrPlayer::fillJnrInventory, 1);
 	}
 
 	@EventHandler
@@ -68,7 +91,6 @@ public class JumpAndRunListener implements Listener {
 
 		jnrPlayer.setActiveJnr(null);
 		event.getPlayer().teleport(jnr.getLeavePoint());
-		event.getPlayer().getInventory().clear();
 	}
 
 	@EventHandler(priority = EventPriority.LOWEST)
@@ -84,7 +106,6 @@ public class JumpAndRunListener implements Listener {
 		StopJnrEvent e = new StopJnrEvent(event.getPlayer(), jnr, true);
 		Bukkit.getPluginManager().callEvent(e);
 
-		event.getPlayer().getInventory().clear();
 		jnrPlayer.setActiveJnr(null);
 	}
 }

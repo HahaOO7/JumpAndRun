@@ -21,8 +21,9 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.lang.reflect.Field;
 import java.util.*;
+
+import static at.haha007.minigames.jumpandrun.Utils.*;
 
 public class JumpAndRunEditor implements Listener {
 	private final HashMap<Player, List<Integer>> entityIDs = new HashMap<>();
@@ -120,7 +121,7 @@ public class JumpAndRunEditor implements Listener {
 	}
 
 	public ItemStack getEditorTool(JumpAndRun jnr, int checkpoint) {
-		return Utils.getItem(
+		return getItem(
 			Material.NETHER_STAR, ChatColor.GOLD + "JNR Tool",
 			ChatColor.DARK_AQUA + "Left: " + ChatColor.AQUA + "edit Checkpoint",
 			ChatColor.DARK_AQUA + "Right: " + ChatColor.AQUA + "add Checkpoint",
@@ -144,7 +145,7 @@ public class JumpAndRunEditor implements Listener {
 		Inventory inv = Bukkit.createInventory(null, 54, titleCpEditor);
 		JumpAndRunCheckpoint cp = jnr.getCheckpoint(cpIndex);
 		// set yaw/pitch
-		ItemStack arrowItem = Utils.getSkull(
+		ItemStack arrowItem = getSkull(
 			"ewogICJ0aW1lc3RhbXAiIDogMTU5MDg1NTAyMTg0OCwKICAicHJvZmlsZUlkIiA6ICI1MGM4NTEwYjVlYTA0ZDYwYmU5YTdkNTQy"
 				+ "ZDZjZDE1NiIsCiAgInByb2ZpbGVOYW1lIiA6ICJNSEZfQXJyb3dSaWdodCIsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0"
 				+ "lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9kMzRlZjA2Mzg1"
@@ -161,23 +162,23 @@ public class JumpAndRunEditor implements Listener {
 
 		// set money
 		inv.setItem(4,
-			Utils.getItem(Material.GOLD_INGOT,
+			getItem(Material.GOLD_INGOT,
 				ChatColor.GOLD + "Money Amount",
 				ChatColor.AQUA.toString() + cp.getMoney(),
 				ChatColor.AQUA + "Right Click: " + ChatColor.DARK_AQUA + "-",
 				ChatColor.AQUA + "Left Click:  " + ChatColor.DARK_AQUA + "+"));
 		inv.setItem(5,
-			Utils.getItem(Material.GOLD_INGOT,
+			getItem(Material.GOLD_INGOT,
 				ChatColor.GOLD + "Money Change",
 				ChatColor.AQUA.toString() + ChatColor.DARK_AQUA + Math.pow(10, moneyMultiplyer),
 				ChatColor.AQUA + "Multiplyer:  " + ChatColor.DARK_AQUA + moneyMultiplyer,
 				ChatColor.AQUA + "Right Click: " + ChatColor.DARK_AQUA + "-",
 				ChatColor.AQUA + "Left Click:  " + ChatColor.DARK_AQUA + "+"));
-		inv.setItem(8, Utils.getItem(Material.BARRIER, ChatColor.RED + "Delete Checkpoint"));
+		inv.setItem(8, getItem(Material.BARRIER, ChatColor.RED + "Delete Checkpoint"));
 		// commands
 		List<String> cmds = cp.getCommands();
 		for (int i = 0; i < cmds.size(); i++)
-			inv.setItem(i + 9, Utils.getItem(Material.PAPER, ChatColor.GOLD.toString() + cmds.get(i), ChatColor.AQUA + "Click to Delete."));
+			inv.setItem(i + 9, getItem(Material.PAPER, ChatColor.GOLD.toString() + cmds.get(i), ChatColor.AQUA + "Click to Delete."));
 		player.openInventory(inv);
 	}
 
@@ -265,15 +266,15 @@ public class JumpAndRunEditor implements Listener {
 			PacketPlayOutSpawnEntityLiving packet = new PacketPlayOutSpawnEntityLiving();
 			JumpAndRunCheckpoint cp = jnr.getCheckpoint(i);
 			int entityID = rand.nextInt();
-			setField(packet.getClass(), "a", packet, entityID);
-			setField(packet.getClass(), "b", packet, UUID.randomUUID());
+			setField(packet, "a", entityID);
+			setField(packet, "b", UUID.randomUUID());
 			// entity type
-			setField(packet.getClass(), "c", packet, 31);
+			setField(packet, "c", 31);
 			// pos
-			setField(packet.getClass(), "d", packet, cp.getPos().getX());
-			setField(packet.getClass(), "e", packet, cp.getPos().getY());
-			setField(packet.getClass(), "f", packet, cp.getPos().getZ());
-			Utils.sendPacket(player, packet);
+			setField(packet, "d", cp.getPos().getX());
+			setField(packet, "e", cp.getPos().getY());
+			setField(packet, "f", cp.getPos().getZ());
+			sendPacket(player, packet);
 			guardianIDs[i] = entityID;
 			idList.add(entityID);
 		}
@@ -287,7 +288,7 @@ public class JumpAndRunEditor implements Listener {
 			if (i > 0)
 				dataWatcher.register(new DataWatcherObject<>(16, DataWatcherRegistry.b), guardianIDs[guardianIDs.length - i]);
 			PacketPlayOutEntityMetadata packet = new PacketPlayOutEntityMetadata(guardianIDs[guardianIDs.length - 1 - i], dataWatcher, true);
-			Utils.sendPacket(player, packet);
+			sendPacket(player, packet);
 		}
 
 		// spawn checkpoints
@@ -296,16 +297,16 @@ public class JumpAndRunEditor implements Listener {
 			JumpAndRunCheckpoint cp = jnr.getCheckpoint(i);
 			int entityID = rand.nextInt();
 			UUID uuid = UUID.randomUUID();
-			setField(packet.getClass(), "a", packet, entityID);
-			setField(packet.getClass(), "b", packet, uuid);
+			setField(packet, "a", entityID);
+			setField(packet, "b", uuid);
 			// pos
-			setField(packet.getClass(), "c", packet, cp.getPos().getX());
-			setField(packet.getClass(), "d", packet, cp.getPos().getY());
-			setField(packet.getClass(), "e", packet, cp.getPos().getZ());
+			setField(packet, "c", cp.getPos().getX());
+			setField(packet, "d", cp.getPos().getY());
+			setField(packet, "e", cp.getPos().getZ());
 			// entity type
-			setField(packet.getClass(), "k", packet, EntityTypes.FALLING_BLOCK);
-			setField(packet.getClass(), "l", packet, Block.getCombinedId(Blocks.LIGHT_WEIGHTED_PRESSURE_PLATE.getBlockData()));
-			Utils.sendPacket(player, packet);
+			setField(packet, "k", EntityTypes.FALLING_BLOCK);
+			setField(packet, "l", Block.getCombinedId(Blocks.LIGHT_WEIGHTED_PRESSURE_PLATE.getBlockData()));
+			sendPacket(player, packet);
 			checkpointIDs[i] = entityID;
 			uuids[i] = uuid;
 			idList.add(entityID);
@@ -317,37 +318,37 @@ public class JumpAndRunEditor implements Listener {
 			dataWatcher.register(new DataWatcherObject<>(0, DataWatcherRegistry.a), (byte) 0b01000000);
 			dataWatcher.register(new DataWatcherObject<>(5, DataWatcherRegistry.i), true);
 			PacketPlayOutEntityMetadata packet = new PacketPlayOutEntityMetadata(checkpointID, dataWatcher, true);
-			Utils.sendPacket(player, packet);
+			sendPacket(player, packet);
 		}
 
 		if (selected > 0) {
 			PacketPlayOutScoreboardTeam packetRed = new PacketPlayOutScoreboardTeam();
-			setField(PacketPlayOutScoreboardTeam.class, "a", packetRed, Utils.getRandomString(16)); // name
-			setField(PacketPlayOutScoreboardTeam.class, "b", packetRed, new ChatComponentText("")); // display name
-			setField(PacketPlayOutScoreboardTeam.class, "c", packetRed, new ChatComponentText("PRE ")); // prefix
-			setField(PacketPlayOutScoreboardTeam.class, "d", packetRed, new ChatComponentText(" SUF")); // suffix
-			setField(PacketPlayOutScoreboardTeam.class, "e", packetRed, "never"); // name tag visible
-			setField(PacketPlayOutScoreboardTeam.class, "f", packetRed, "never"); // collision rule
-			setField(PacketPlayOutScoreboardTeam.class, "g", packetRed, EnumChatFormat.RED); // team color
-			setField(PacketPlayOutScoreboardTeam.class, "h", packetRed, Collections.singletonList(uuids[selected - 1].toString())); // entities
-			setField(PacketPlayOutScoreboardTeam.class, "i", packetRed, 0); // packet type crete team
-			setField(PacketPlayOutScoreboardTeam.class, "j", packetRed, 1); // entity count?
-			Utils.sendPacket(player, packetRed);
+			setField(packetRed, "a", getRandomString(16)); // name
+			setField(packetRed, "b", new ChatComponentText("")); // display name
+			setField(packetRed, "c", new ChatComponentText("PRE ")); // prefix
+			setField(packetRed, "d", new ChatComponentText(" SUF")); // suffix
+			setField(packetRed, "e", "never"); // name tag visible
+			setField(packetRed, "f", "never"); // collision rule
+			setField(packetRed, "g", EnumChatFormat.RED); // team color
+			setField(packetRed, "h", Collections.singletonList(uuids[selected - 1].toString())); // entities
+			setField(packetRed, "i", 0); // packet type crete team
+			setField(packetRed, "j", 1); // entity count?
+			sendPacket(player, packetRed);
 		}
 
 		if (selected < uuids.length && selected >= 0) {
 			PacketPlayOutScoreboardTeam packetBlue = new PacketPlayOutScoreboardTeam();
-			setField(PacketPlayOutScoreboardTeam.class, "a", packetBlue, Utils.getRandomString(16)); // name
-			setField(PacketPlayOutScoreboardTeam.class, "b", packetBlue, new ChatComponentText("")); // display name
-			setField(PacketPlayOutScoreboardTeam.class, "c", packetBlue, new ChatComponentText("PRE ")); // prefix
-			setField(PacketPlayOutScoreboardTeam.class, "d", packetBlue, new ChatComponentText(" SUF")); // suffix
-			setField(PacketPlayOutScoreboardTeam.class, "e", packetBlue, "never"); // name tag visible
-			setField(PacketPlayOutScoreboardTeam.class, "f", packetBlue, "never"); // collision rule
-			setField(PacketPlayOutScoreboardTeam.class, "g", packetBlue, EnumChatFormat.BLUE); // team color
-			setField(PacketPlayOutScoreboardTeam.class, "h", packetBlue, Collections.singletonList(uuids[selected].toString())); // entities
-			setField(PacketPlayOutScoreboardTeam.class, "i", packetBlue, 0); // packet type crete team
-			setField(PacketPlayOutScoreboardTeam.class, "j", packetBlue, 1); // entity count?
-			Utils.sendPacket(player, packetBlue);
+			setField(packetBlue, "a", getRandomString(16)); // name
+			setField(packetBlue, "b", new ChatComponentText("")); // display name
+			setField(packetBlue, "c", new ChatComponentText("PRE ")); // prefix
+			setField(packetBlue, "d", new ChatComponentText(" SUF")); // suffix
+			setField(packetBlue, "e", "never"); // name tag visible
+			setField(packetBlue, "f", "never"); // collision rule
+			setField(packetBlue, "g", EnumChatFormat.BLUE); // team color
+			setField(packetBlue, "h", Collections.singletonList(uuids[selected].toString())); // entities
+			setField(packetBlue, "i", 0); // packet type crete team
+			setField(packetBlue, "j", 1); // entity count?
+			sendPacket(player, packetBlue);
 		}
 	}
 
@@ -369,19 +370,7 @@ public class JumpAndRunEditor implements Listener {
 		if (!entityIDs.containsKey(player))
 			return;
 		for (int i : entityIDs.get(player)) {
-			Utils.sendPacket(player, new PacketPlayOutEntityDestroy(i));
-		}
-	}
-
-	private void setField(Class<?> clazz, String fieldName, Object object, Object value) {
-		try {
-			Field field = clazz.getDeclaredField(fieldName);
-			boolean a = field.isAccessible();
-			field.setAccessible(true);
-			field.set(object, value);
-			field.setAccessible(a);
-		} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e) {
-			e.printStackTrace();
+			sendPacket(player, new PacketPlayOutEntityDestroy(i));
 		}
 	}
 }
