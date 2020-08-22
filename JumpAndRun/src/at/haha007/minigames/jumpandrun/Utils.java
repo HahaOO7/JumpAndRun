@@ -63,16 +63,9 @@ public class Utils {
 		return CraftItemStack.asNMSCopy(itemStack);
 	}
 
-	public static ItemStack addGlow(ItemStack item) {
-		ItemMeta meta = item.getItemMeta();
-		meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
-		item.setItemMeta(meta);
-		return item;
-	}
-
 	public static void setField(Object object, String fieldName, Object value) {
 		try {
-			Class clazz = object.getClass();
+			Class<?> clazz = object.getClass();
 			Field field = clazz.getDeclaredField(fieldName);
 			boolean a = field.isAccessible();
 			field.setAccessible(true);

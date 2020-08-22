@@ -66,16 +66,15 @@ public class JumpAndRunListener implements Listener {
 		JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayerIfActive(player);
 		if (jnrPlayer == null) return;
 		if (player.getHealth() >= event.getDamage()) return;
+		event.setCancelled(true);
 		jnrPlayer.respawn();
 	}
-
 
 	@EventHandler
 	void onInventoryInteract(InventoryClickEvent event) {
 		JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayerIfActive((Player) event.getWhoClicked());
 		if (jnrPlayer == null) return;
 		event.setCancelled(true);
-		jnrPlayer.fillJnrInventory();
 		Bukkit.getScheduler().runTaskLater(JumpAndRunPlugin.getInstance(), jnrPlayer::fillJnrInventory, 1);
 	}
 
