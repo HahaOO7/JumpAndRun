@@ -92,6 +92,11 @@ public class JumpAndRunListener implements Listener {
 		event.getPlayer().teleport(jnr.getLeavePoint());
 	}
 
+	@EventHandler
+	void onStopJnr(StopJnrEvent event){
+		event.getPlayer().updateInventory();
+	}
+
 	@EventHandler(priority = EventPriority.LOWEST)
 	void onPlayerTeleport(PlayerTeleportEvent event) {
 		JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayerIfActive(event.getPlayer());
