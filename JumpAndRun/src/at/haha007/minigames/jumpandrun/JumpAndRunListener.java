@@ -1,6 +1,7 @@
 package at.haha007.minigames.jumpandrun;
 
 import at.haha007.minigames.jumpandrun.events.StopJnrEvent;
+import at.haha007.minigames.jumpandrun.gui.JumpAndRunCheckpointGui;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -34,7 +35,7 @@ public class JumpAndRunListener implements Listener {
 				break;
 			case 1:
 				JumpAndRun jnr = jnrPlayer.getActiveJumpAndRun();
-				JumpAndRunPlugin.getCmd().openJnrMenu(player, jnr, jnrPlayer.getActiveCheckPointIndex(jnr));
+				JumpAndRunCheckpointGui.open(player, jnr);
 				break;
 			case 8:
 				jnr = jnrPlayer.getActiveJumpAndRun();

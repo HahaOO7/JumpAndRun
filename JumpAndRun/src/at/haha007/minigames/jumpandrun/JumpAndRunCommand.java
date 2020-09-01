@@ -1,24 +1,17 @@
 package at.haha007.minigames.jumpandrun;
 
-import at.haha007.edenlib.utils.ItemUtils;
 import at.haha007.edenlib.utils.Utils;
 import at.haha007.minigames.jumpandrun.events.AddJnrCmdEvent;
 import at.haha007.minigames.jumpandrun.events.CreateJnrEvent;
 import at.haha007.minigames.jumpandrun.events.DeleteJnrEvent;
+import at.haha007.minigames.jumpandrun.gui.JumpAndRunManagementGui;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -26,27 +19,6 @@ import java.util.stream.Collectors;
 
 
 public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listener {
-	private final String titleMainMenu = ChatColor.GREEN + "JNR menu";
-	private final String titleCheckpointMenu = ChatColor.GREEN + "JNR Checkpoint Menu";
-	private final String[] explanation = {
-		ChatColor.DARK_AQUA + "Leftclick a JNR to open its Inventory.",
-		ChatColor.DARK_AQUA + "Rightclick a JNR to get the JNR tool.",
-		ChatColor.DARK_AQUA + "Shift+Scroll to select the wantet Checkpoint.",
-		ChatColor.DARK_AQUA + "Rightclick with the tool to ad a checkpoint",
-		ChatColor.DARK_AQUA + "  in between the red and the blue checkpoint.",
-		ChatColor.DARK_AQUA + "Leftclick with the tool to edit the blue Checkpoint",
-		ChatColor.DARK_AQUA + "Player Commands:",
-		ChatColor.DARK_AQUA + "Add a command at blue Checkpoint: ",
-		ChatColor.AQUA + "  /jnr addcmd <cmd>",
-		ChatColor.AQUA + "  Use %player% for the JNR player.",
-		ChatColor.DARK_AQUA + "Create a new JNR: ",
-		ChatColor.AQUA + "  /jnr create <name>",
-		ChatColor.DARK_AQUA + "Delete an existing JNR: ",
-		ChatColor.AQUA + "  /jnr delete <name>",
-		ChatColor.DARK_AQUA + "CommandBlock:",
-		ChatColor.DARK_AQUA + "Start JNR: ",
-		ChatColor.AQUA + "  /jnr <name> <radius>"
-	};
 
 	@Override
 	public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String[] args) {
@@ -138,7 +110,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 			sender.sendMessage(ChatColor.GOLD + "Command hinzugefügt");
 			return true;
 		}
-		openMainJnrMenu((Player) sender, 0);
+		JumpAndRunManagementGui.open((Player) sender);
 		return true;
 	}
 
@@ -158,184 +130,5 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 		return Collections.emptyList();
 	}
 
-	private void openMainJnrMenu(Player player, int page) {
-		Inventory inv = Bukkit.createInventory(null, 54, titleMainMenu);
-		List<JumpAndRun> jnrList = Arrays.asList(JumpAndRunPlugin.getJumpAndRuns().toArray(new JumpAndRun[0]));
-		if (page > jnrList.size() / 45)
-			page = 0;
-		if (page < 0)
-			page = jnrList.size() / 45;
 
-		jnrList.sort(Comparator.comparing(JumpAndRun::getName));
-		for (int i = 0; i < 45; i++) {
-			int index = page * 45 + i;
-			if (index > jnrList.size() - 1)
-				break;
-			JumpAndRun jnr = jnrList.get(index);
-			inv.setItem(index, ItemUtils.getItem(
-				Material.LIGHT_WEIGHTED_PRESSURE_PLATE,
-				ChatColor.GREEN + jnr.getName(),
-				ChatColor.GOLD + "Checkpoints: " + ChatColor.AQUA + jnr.size(),
-				ChatColor.GOLD + "World: " + jnr.getWorld()));
-
-		}
-
-		// next page, create jnr etc last line
-		inv.setItem(45, getArrowLeft());
-		inv.setItem(46, ItemUtils.getItem(Material.BOOK, "Explanation", explanation));
-		inv.setItem(53, getArrowRight());
-		player.openInventory(inv);
-	}
-
-	private void handleMainMenuClick(InventoryClickEvent event) {
-		event.setCancelled(true);
-		if (event.getClickedInventory() != event.getView().getTopInventory())
-			return;
-		int page = ItemUtils.getNbtInt(event.getInventory().getItem(49), "page");
-		switch (event.getSlot()) {
-			case 45:
-				openMainJnrMenu((Player) event.getWhoClicked(), page - 1);
-				break;
-			case 46:
-				for (String str : explanation) {
-					event.getWhoClicked().sendMessage(ChatColor.GOLD + "[JNR] " + str);
-				}
-				break;
-			case 53:
-				openMainJnrMenu((Player) event.getWhoClicked(), page + 1);
-				break;
-
-			default:
-				if (event.getClick() == ClickType.RIGHT) {
-					ItemStack item = event.getCurrentItem();
-					if (item == null)
-						break;
-					String itemName = item.getItemMeta().getDisplayName();
-					String jnrName = itemName.replaceFirst(ChatColor.GREEN.toString(), "");
-					JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(jnrName);
-					if (jnr == null)
-						break;
-					ItemUtils.giveItem((Player) event.getWhoClicked(), JumpAndRunPlugin.getEditor().getEditorTool(jnr, jnr.size()));
-					JumpAndRunPlugin.getEditor().displayPath((Player) event.getWhoClicked(), jnr, 0);
-				} else if (event.getClick() == ClickType.LEFT) {
-					ItemStack item = event.getCurrentItem();
-					if (item == null)
-						break;
-					String itemName = item.getItemMeta().getDisplayName();
-					String jnrName = itemName.replaceFirst(ChatColor.GREEN.toString(), "");
-					JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(jnrName);
-					if (jnr == null)
-						break;
-					openJnrMenu((Player) event.getWhoClicked(), jnr, 0);
-				}
-				break;
-		}
-	}
-
-	public void openJnrMenu(Player player, JumpAndRun jnr, int page) {
-		Inventory inv = Bukkit.createInventory(null, 54, titleCheckpointMenu);
-		if (page < 0) page = jnr.size() / 45;
-		if (page > jnr.size() / 45) page = 0;
-		JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayer(player.getUniqueId());
-		int reached = jnrPlayer.getMaxCheckpoint(jnr);
-		for (int i = 0; i < 45; i++) {
-			int cpIndex = i + 45 * page;
-			JumpAndRunCheckpoint cp = jnr.getCheckpoint(cpIndex);
-			if (cp == null) break;
-			ItemStack cpItem = ItemUtils.setNbtInt(ItemUtils.getItem(cpIndex > reached ? Material.DIRT : Material.GRASS_BLOCK, ChatColor.GOLD + "CP " + cpIndex), "index", cpIndex);
-			inv.setItem(i, cpItem);
-		}
-
-		ItemStack editorTool = JumpAndRunPlugin.getEditor().getEditorTool(jnr, 0);
-		ItemMeta itemMeta = editorTool.getItemMeta();
-		List<String> lore = itemMeta.getLore();
-		lore.add(ChatColor.AQUA + "Set leave spawnpoint.");
-		itemMeta.setLore(lore);
-		editorTool.setItemMeta(itemMeta);
-		if (player.hasPermission("jnr.command.use"))
-			inv.setItem(49, ItemUtils.setNbtInt(editorTool, "page", page));
-		ItemStack left = ItemUtils.setNbtString(ItemUtils.setNbtInt(getArrowLeft(), "page", page), "jnr", jnr.getName());
-
-		inv.setItem(45, left);
-		inv.setItem(53, getArrowRight());
-
-		player.openInventory(inv);
-		if (JumpAndRunPlugin.getPlayerIfActive(player) != null)
-			Bukkit.getScheduler().runTaskLater(JumpAndRunPlugin.getInstance(), jnrPlayer::fillJnrInventory, 1);
-	}
-
-	private void handleJnrMenuClick(InventoryClickEvent event) {
-		//TODO next page while in jnr
-		event.setCancelled(true);
-		if (event.getClickedInventory() != event.getView().getTopInventory()) return;
-		int page = ItemUtils.getNbtInt(event.getInventory().getItem(45), "page");
-		JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(ItemUtils.getNbtString(event.getInventory().getItem(45), "jnr"));
-		if (jnr == null) {
-			event.getWhoClicked().closeInventory();
-			return;
-		}
-
-		switch (event.getSlot()) {
-			case 53:
-				openJnrMenu((Player) event.getWhoClicked(), jnr, page + 1);
-				break;
-			case 49:
-				if (!event.getWhoClicked().hasPermission("jnr.command.use")) break;
-				jnr.setLeavePoint(event.getWhoClicked().getLocation());
-				JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
-				break;
-			case 45:
-				openJnrMenu((Player) event.getWhoClicked(), jnr, page - 1);
-				break;
-			default:
-				if (event.getSlot() >= 45)
-					break;
-				ItemStack cpItem = event.getCurrentItem();
-				if (cpItem == null) break;
-				if (cpItem.getType() == Material.DIRT) break;
-				int cp = ItemUtils.getNbtInt(cpItem, "index");
-				JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayerIfActive((Player) event.getWhoClicked());
-				if (jnrPlayer != null) {
-					jnrPlayer.setCheckpoint(jnr, cp);
-					jnrPlayer.respawn();
-					break;
-				}
-				JumpAndRunCheckpoint checkpoint = jnr.getCheckpoint(cp);
-				event.getWhoClicked().teleport(new Location(jnr.getWorld(), checkpoint.getPosX() + .5, checkpoint.getPosY(), checkpoint.getPosZ(), checkpoint.getYaw(), checkpoint.getPitch()));
-				break;
-		}
-	}
-
-	@EventHandler(priority = EventPriority.LOW)
-	void onInventoryClick(InventoryClickEvent event) {
-		String title = event.getView().getTitle();
-		if (title.equals(titleCheckpointMenu))
-			handleJnrMenuClick(event);
-		else if (title.equals(titleMainMenu))
-			handleMainMenuClick(event);
-	}
-
-	private ItemStack getArrowRight() {
-		ItemStack item = ItemUtils.getSkull(
-			"ewogICJ0aW1lc3RhbXAiIDogMTU5MDg1NTAyMTg0OCwKICAicHJvZmlsZUlkIiA6ICI1MGM4NTEwYjVlYTA0ZDYwYmU5YTdkNTQy"
-				+ "ZDZjZDE1NiIsCiAgInByb2ZpbGVOYW1lIiA6ICJNSEZfQXJyb3dSaWdodCIsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0"
-				+ "lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9kMzRlZjA2Mzg1"
-				+ "MzcyMjJiMjBmNDgwNjk0ZGFkYzBmODVmYmUwNzU5ZDU4MWFhN2ZjZGYyZTQzMTM5Mzc3MTU4IgogICAgfQogIH0KfQ==");
-		ItemMeta meta = item.getItemMeta();
-		meta.setDisplayName(ChatColor.GOLD + "Next Page");
-		item.setItemMeta(meta);
-		return item;
-	}
-
-	private ItemStack getArrowLeft() {
-		ItemStack item = ItemUtils.getSkull(
-			"ewogICJ0aW1lc3RhbXAiIDogMTU5MDg1NTI4OTM2MiwKICAicHJvZmlsZUlkIiA6ICJhNjhmMGI2NDhkMTQ0MDAwYTk1ZjRiOWJh"
-				+ "MTRmOGRmOSIsCiAgInByb2ZpbGVOYW1lIiA6ICJNSEZfQXJyb3dMZWZ0IiwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU"
-				+ "4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlL2Y3YWFjYWQxOTNl"
-				+ "MjIyNjk3MWVkOTUzMDJkYmE0MzM0MzhiZTQ2NDRmYmFiNWViZjgxODA1NDA2MTY2N2ZiZTIiCiAgICB9CiAgfQp9");
-		ItemMeta meta = item.getItemMeta();
-		meta.setDisplayName(ChatColor.GOLD + "Previous Page");
-		item.setItemMeta(meta);
-		return item;
-	}
 }

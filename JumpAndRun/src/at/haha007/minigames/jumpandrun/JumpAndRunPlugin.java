@@ -1,6 +1,9 @@
 package at.haha007.minigames.jumpandrun;
 
 import at.haha007.minigames.jumpandrun.events.StartJnrEvent;
+import at.haha007.minigames.jumpandrun.gui.JumpAndRunCheckpointEditorGui;
+import at.haha007.minigames.jumpandrun.gui.JumpAndRunCheckpointGui;
+import at.haha007.minigames.jumpandrun.gui.JumpAndRunManagementGui;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -117,6 +120,9 @@ public class JumpAndRunPlugin extends JavaPlugin {
 		getServer().getPluginManager().registerEvents(cmd, this);
 		getServer().getPluginManager().registerEvents(editor, this);
 		getServer().getPluginManager().registerEvents(new JumpAndRunListener(), this);
+		new JumpAndRunCheckpointGui(this);
+		new JumpAndRunManagementGui(this);
+		new JumpAndRunCheckpointEditorGui(this);
 	}
 
 	private boolean setupEconomy() {
