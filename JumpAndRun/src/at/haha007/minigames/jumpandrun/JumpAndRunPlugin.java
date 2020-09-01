@@ -23,25 +23,6 @@ public class JumpAndRunPlugin extends JavaPlugin {
 	private static JumpAndRunCommand cmd;
 	private static HashSet<JumpAndRun> jumpAndRuns;
 
-	@Override
-	public void onEnable() {
-		if (!getDataFolder().exists()) getDataFolder().mkdirs();
-		instance = this;
-		if (!setupEconomy())
-			Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[JumpAndRun] Failed to connect to economy!");
-		players = new HashMap<>();
-		loader = new JumpAndRunLoader();
-		editor = new JumpAndRunEditor();
-		jumpAndRuns = loader.loadAllJumpAndRuns();
-
-		cmd = new JumpAndRunCommand();
-		getCommand("jumpandrun").setExecutor(cmd);
-		getCommand("jumpandrun").setTabCompleter(cmd);
-		getServer().getPluginManager().registerEvents(cmd, this);
-		getServer().getPluginManager().registerEvents(editor, this);
-		getServer().getPluginManager().registerEvents(new JumpAndRunListener(), this);
-	}
-
 	public static void startJumpAndRun(JumpAndRun jnr, Player player) {
 		StartJnrEvent event = new StartJnrEvent(player, jnr);
 		Bukkit.getPluginManager().callEvent(event);
@@ -54,17 +35,6 @@ public class JumpAndRunPlugin extends JavaPlugin {
 	public static void delete(JumpAndRun jnr) {
 		jumpAndRuns.remove(jnr);
 		loader.delete(jnr);
-	}
-
-
-	private boolean setupEconomy() {
-		if (getServer().getPluginManager().getPlugin("Vault") == null) {
-			return false;
-		}
-		RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
-		if (rsp == null) return false;
-		econ = rsp.getProvider();
-		return econ.isEnabled();
 	}
 
 	public static Economy getEconomy() {
@@ -128,5 +98,34 @@ public class JumpAndRunPlugin extends JavaPlugin {
 
 	public static JumpAndRunCommand getCmd() {
 		return cmd;
+	}
+
+	@Override
+	public void onEnable() {
+		instance = this;
+		if (!getDataFolder().exists()) getDataFolder().mkdirs();
+		if (!setupEconomy())
+			Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[JumpAndRun] Failed to connect to economy!");
+		players = new HashMap<>();
+		loader = new JumpAndRunLoader();
+		editor = new JumpAndRunEditor();
+		jumpAndRuns = loader.loadAllJumpAndRuns();
+
+		cmd = new JumpAndRunCommand();
+		getCommand("jumpandrun").setExecutor(cmd);
+		getCommand("jumpandrun").setTabCompleter(cmd);
+		getServer().getPluginManager().registerEvents(cmd, this);
+		getServer().getPluginManager().registerEvents(editor, this);
+		getServer().getPluginManager().registerEvents(new JumpAndRunListener(), this);
+	}
+
+	private boolean setupEconomy() {
+		if (getServer().getPluginManager().getPlugin("Vault") == null) {
+			return false;
+		}
+		RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+		if (rsp == null) return false;
+		econ = rsp.getProvider();
+		return econ.isEnabled();
 	}
 }

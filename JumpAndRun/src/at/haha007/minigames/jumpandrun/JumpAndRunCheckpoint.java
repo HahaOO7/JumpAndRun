@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class JumpAndRunCheckpoint {
+	private final List<String> commands;
 	private int posX, posY, posZ;
 	private float pitch, yaw;
-	private final List<String> commands;
 	private double money;
 
 	public JumpAndRunCheckpoint(int x, int y, int z, float pitch, float yaw, List<String> commands, double money) {
@@ -36,16 +36,16 @@ public class JumpAndRunCheckpoint {
 		this.pitch = pitch;
 	}
 
-	public void setMoney(double money) {
-		this.money = money;
-	}
-
 	public List<String> getCommands() {
 		return commands;
 	}
 
 	public double getMoney() {
 		return money;
+	}
+
+	public void setMoney(double money) {
+		this.money = money;
 	}
 
 	public boolean comparePosition(int x, int y, int z) {

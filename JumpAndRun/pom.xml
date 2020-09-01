@@ -8,7 +8,7 @@
     <version>1.0</version>
     <name>JumpAndRun</name>
     <properties>
-        <mcVersion>1.16.1-R0.1-SNAPSHOT</mcVersion>
+        <mcVersion>1.16.2-R0.1-SNAPSHOT</mcVersion>
     </properties>
     <repositories>
         <repository>
@@ -25,6 +25,16 @@
         </repository>
     </repositories>
     <dependencies>
+<!--        <dependency>-->
+<!--            <groupId>com.github.HahaOO7</groupId>-->
+<!--            <artifactId>EdenLib</artifactId>-->
+<!--            <version>development-268d484fab-1</version>-->
+<!--        </dependency>-->
+        <dependency>
+            <groupId>at.haha007</groupId>
+            <artifactId>edenlib</artifactId>
+            <version>1.0</version>
+        </dependency>
         <dependency>
             <groupId>com.destroystokyo.paper</groupId>
             <artifactId>paper-api</artifactId>

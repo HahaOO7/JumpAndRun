@@ -1,13 +1,16 @@
 package at.haha007.minigames.jumpandrun;
 
+import at.haha007.edenlib.utils.Utils;
 import at.haha007.minigames.jumpandrun.events.AddJnrCheckpointEvent;
 import at.haha007.minigames.jumpandrun.events.RemoveJnrCheckpointEvent;
 import at.haha007.minigames.jumpandrun.events.RemoveJnrCmdEvent;
-import net.minecraft.server.v1_16_R1.*;
+import net.minecraft.server.v1_16_R2.Blocks;
+import net.minecraft.server.v1_16_R2.EnumChatFormat;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -23,9 +26,12 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.*;
 
-import static at.haha007.minigames.jumpandrun.Utils.*;
+import static at.haha007.edenlib.utils.ItemUtils.getItem;
+import static at.haha007.edenlib.utils.ItemUtils.getSkull;
+
 
 public class JumpAndRunEditor implements Listener {
+	private final HashSet<Player> cooldownPlayers = new HashSet<>();
 	private final HashMap<Player, List<Integer>> entityIDs = new HashMap<>();
 	private final Random rand = new Random();
 	private final String titleCpEditor = ChatColor.GREEN + "Checkpoint Editor";
@@ -50,26 +56,36 @@ public class JumpAndRunEditor implements Listener {
 		}
 		if (e.getAction() == Action.RIGHT_CLICK_BLOCK) {
 			// Insert Checkpoint
-			JumpAndRunCheckpoint cp =
-				new JumpAndRunCheckpoint(
-					e.getClickedBlock().getX(),
-					e.getClickedBlock().getY() + 1,
-					e.getClickedBlock().getZ(),
-					0f,
-					0f,
-					null,
-					0d);
-			AddJnrCheckpointEvent addJnrCheckpointEvent = new AddJnrCheckpointEvent(jnr, cp, checkpoint, e.getPlayer());
-			Bukkit.getPluginManager().callEvent(addJnrCheckpointEvent);
-			if (addJnrCheckpointEvent.isCancelled()) return;
-			jnr.addCheckpoint(cp,
-				checkpoint);
-			e.getClickedBlock().getRelative(BlockFace.UP).setType(Material.LIGHT_WEIGHTED_PRESSURE_PLATE, false);
-			e.getPlayer().getInventory().setItemInMainHand(getEditorTool(jnr, checkpoint + 1));
-			JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
-			removePath(e.getPlayer());
-			displayPath(e.getPlayer(), jnr, checkpoint + 1);
+			Player player = e.getPlayer();
+			if (!cooldownPlayers.contains(player)) {
+				insertCheckpoint(jnr, checkpoint, player, e.getClickedBlock());
+				cooldownPlayers.add(player);
+				Bukkit.getScheduler().runTaskLater(JumpAndRunPlugin.getInstance(), () -> {
+					cooldownPlayers.remove(player);
+				}, 10);
+			}
 		}
+	}
+
+	private void insertCheckpoint(JumpAndRun jnr, int index, Player player, Block block) {
+		JumpAndRunCheckpoint cp =
+			new JumpAndRunCheckpoint(
+				block.getX(),
+				block.getY() + 1,
+				block.getZ(),
+				0f,
+				0f,
+				null,
+				0d);
+		AddJnrCheckpointEvent addJnrCheckpointEvent = new AddJnrCheckpointEvent(jnr, cp, index, player);
+		Bukkit.getPluginManager().callEvent(addJnrCheckpointEvent);
+		if (addJnrCheckpointEvent.isCancelled()) return;
+		jnr.addCheckpoint(cp, index);
+		block.getRelative(BlockFace.UP).setType(Material.LIGHT_WEIGHTED_PRESSURE_PLATE, false);
+		player.getInventory().setItemInMainHand(getEditorTool(jnr, index + 1));
+		JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
+		removePath(player);
+		displayPath(player, jnr, index + 1);
 	}
 
 	@EventHandler
@@ -78,10 +94,19 @@ public class JumpAndRunEditor implements Listener {
 			return;
 		if (!e.getPlayer().isSneaking()) {
 			removePath(e.getPlayer());
+			ItemStack prevItem = e.getPlayer().getInventory().getItem(e.getPreviousSlot());
+			if (isEditorTool(prevItem)) {
+				JumpAndRun jnr = getJumpAndRun(prevItem);
+				if (jnr != null)
+					jnr.getCheckpoints().forEach(
+						jumpAndRunCheckpoint ->
+							e.getPlayer().sendBlockChange(
+								jumpAndRunCheckpoint.getPos().toLocation(e.getPlayer().getWorld()),
+								e.getPlayer().getWorld().getBlockAt(jumpAndRunCheckpoint.getPosX(), jumpAndRunCheckpoint.getPosY(), jumpAndRunCheckpoint.getPosZ()).getBlockData()));
+			}
 			ItemStack item = e.getPlayer().getInventory().getItem(e.getNewSlot());
 			if (!isEditorTool(item))
 				return;
-			assert item != null;
 			JumpAndRun jnr = getJumpAndRun(item);
 			if (jnr == null)
 				return;
@@ -156,6 +181,7 @@ public class JumpAndRunEditor implements Listener {
 			ChatColor.AQUA + "Yaw:   " + ChatColor.DARK_AQUA + cp.getYaw(),
 			ChatColor.AQUA + "Pitch: " + ChatColor.DARK_AQUA + cp.getPitch()
 		)));
+		arrowItem.setItemMeta(arrowMeta);
 		inv.setItem(0, getEditorTool(jnr, cpIndex));
 		inv.setItem(2, arrowItem);
 
@@ -256,100 +282,34 @@ public class JumpAndRunEditor implements Listener {
 
 	public void displayPath(Player player, JumpAndRun jnr, int selected) {
 		if (jnr == null) return;
-		int[] guardianIDs = new int[jnr.size()];
-		int[] checkpointIDs = new int[jnr.size()];
+		Integer[] guardianIDs = new Integer[jnr.size()];
+		Integer[] checkpointIDs = new Integer[jnr.size()];
 		UUID[] uuids = new UUID[jnr.size()];
 		List<Integer> idList = entityIDs.computeIfAbsent(player, entityIds -> new ArrayList<>());
 
-		// spawn guardians
 		for (int i = 0; i < guardianIDs.length; i++) {
-			PacketPlayOutSpawnEntityLiving packet = new PacketPlayOutSpawnEntityLiving();
-			JumpAndRunCheckpoint cp = jnr.getCheckpoint(i);
-			int entityID = rand.nextInt();
-			setField(packet, "a", entityID);
-			setField(packet, "b", UUID.randomUUID());
-			// entity type
-			setField(packet, "c", 31);
-			// pos
-			setField(packet, "d", cp.getPos().getX());
-			setField(packet, "e", cp.getPos().getY());
-			setField(packet, "f", cp.getPos().getZ());
-			sendPacket(player, packet);
-			guardianIDs[i] = entityID;
-			idList.add(entityID);
+			guardianIDs[i] = rand.nextInt();
 		}
-
-		// shoot guardians
-		for (int i = 0; i < guardianIDs.length; i++) {
-			DataWatcher dataWatcher = new DataWatcher(null);
-			dataWatcher.register(new DataWatcherObject<>(0, DataWatcherRegistry.a), (byte) 0b00100000);
-			dataWatcher.register(new DataWatcherObject<>(4, DataWatcherRegistry.i), true);
-			dataWatcher.register(new DataWatcherObject<>(5, DataWatcherRegistry.i), true);
-			if (i > 0)
-				dataWatcher.register(new DataWatcherObject<>(16, DataWatcherRegistry.b), guardianIDs[guardianIDs.length - i]);
-			PacketPlayOutEntityMetadata packet = new PacketPlayOutEntityMetadata(guardianIDs[guardianIDs.length - 1 - i], dataWatcher, true);
-			sendPacket(player, packet);
+		Utils.guardianBeam(player, jnr.getCheckpoint(1).getPos(), jnr.getCheckpoint(0).getPos(), guardianIDs[1], guardianIDs[0]);
+		for (int i = guardianIDs.length - 1; i > 1; i--) {
+			Utils.guardianBeamExisting(player, jnr.getCheckpoint(i).getPos(), guardianIDs[i], guardianIDs[i - 1]);
 		}
+		Collections.addAll(idList, guardianIDs);
 
-		// spawn checkpoints
-		for (int i = 0; i < checkpointIDs.length; i++) {
-			PacketPlayOutSpawnEntity packet = new PacketPlayOutSpawnEntity();
-			JumpAndRunCheckpoint cp = jnr.getCheckpoint(i);
-			int entityID = rand.nextInt();
-			UUID uuid = UUID.randomUUID();
-			setField(packet, "a", entityID);
-			setField(packet, "b", uuid);
-			// pos
-			setField(packet, "c", cp.getPos().getX());
-			setField(packet, "d", cp.getPos().getY());
-			setField(packet, "e", cp.getPos().getZ());
-			// entity type
-			setField(packet, "k", EntityTypes.FALLING_BLOCK);
-			setField(packet, "l", Block.getCombinedId(Blocks.LIGHT_WEIGHTED_PRESSURE_PLATE.getBlockData()));
-			sendPacket(player, packet);
-			checkpointIDs[i] = entityID;
-			uuids[i] = uuid;
-			idList.add(entityID);
+		for (int i = 0; i < jnr.getCheckpoints().size(); i++) {
+			checkpointIDs[i] = rand.nextInt();
+			uuids[i] = UUID.randomUUID();
+			Utils.displayFakeBlock(player, jnr.getCheckpoint(i).getPos(), Blocks.LIGHT_WEIGHTED_PRESSURE_PLATE, checkpointIDs[i], uuids[i]);
+			Utils.addGlow(player, checkpointIDs[i]);
 		}
-
-		// light checkpoints up
-		for (int checkpointID : checkpointIDs) {
-			DataWatcher dataWatcher = new DataWatcher(null);
-			dataWatcher.register(new DataWatcherObject<>(0, DataWatcherRegistry.a), (byte) 0b01000000);
-			dataWatcher.register(new DataWatcherObject<>(5, DataWatcherRegistry.i), true);
-			PacketPlayOutEntityMetadata packet = new PacketPlayOutEntityMetadata(checkpointID, dataWatcher, true);
-			sendPacket(player, packet);
-		}
-
 		if (selected > 0) {
-			PacketPlayOutScoreboardTeam packetRed = new PacketPlayOutScoreboardTeam();
-			setField(packetRed, "a", getRandomString(16)); // name
-			setField(packetRed, "b", new ChatComponentText("")); // display name
-			setField(packetRed, "c", new ChatComponentText("PRE ")); // prefix
-			setField(packetRed, "d", new ChatComponentText(" SUF")); // suffix
-			setField(packetRed, "e", "never"); // name tag visible
-			setField(packetRed, "f", "never"); // collision rule
-			setField(packetRed, "g", EnumChatFormat.RED); // team color
-			setField(packetRed, "h", Collections.singletonList(uuids[selected - 1].toString())); // entities
-			setField(packetRed, "i", 0); // packet type crete team
-			setField(packetRed, "j", 1); // entity count?
-			sendPacket(player, packetRed);
+			Utils.colorClow(player, EnumChatFormat.RED, uuids[selected - 1]);
 		}
-
 		if (selected < uuids.length && selected >= 0) {
-			PacketPlayOutScoreboardTeam packetBlue = new PacketPlayOutScoreboardTeam();
-			setField(packetBlue, "a", getRandomString(16)); // name
-			setField(packetBlue, "b", new ChatComponentText("")); // display name
-			setField(packetBlue, "c", new ChatComponentText("PRE ")); // prefix
-			setField(packetBlue, "d", new ChatComponentText(" SUF")); // suffix
-			setField(packetBlue, "e", "never"); // name tag visible
-			setField(packetBlue, "f", "never"); // collision rule
-			setField(packetBlue, "g", EnumChatFormat.BLUE); // team color
-			setField(packetBlue, "h", Collections.singletonList(uuids[selected].toString())); // entities
-			setField(packetBlue, "i", 0); // packet type crete team
-			setField(packetBlue, "j", 1); // entity count?
-			sendPacket(player, packetBlue);
+			Utils.colorClow(player, EnumChatFormat.BLUE, uuids[selected]);
 		}
+		Collections.addAll(idList, checkpointIDs);
+
 	}
 
 	public JumpAndRun getJumpAndRun(ItemStack editorTool) {
@@ -369,8 +329,14 @@ public class JumpAndRunEditor implements Listener {
 	public void removePath(Player player) {
 		if (!entityIDs.containsKey(player))
 			return;
-		for (int i : entityIDs.get(player)) {
-			sendPacket(player, new PacketPlayOutEntityDestroy(i));
+		List<Integer> ids = entityIDs.get(player);
+		entityIDs.remove(player);
+		int[] ints = new int[ids.size()];
+		for (int i = 0; i < ids.size(); i++) {
+			ints[i] = ids.get(i);
 		}
+
+		Utils.destroyFakeEntity(player, ints);
+
 	}
 }

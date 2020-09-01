@@ -11,25 +11,23 @@ import org.jetbrains.annotations.NotNull;
 public class AddJnrCmdEvent extends PlayerEvent implements Cancellable {
 
 	private static final HandlerList HANDLERS = new HandlerList();
+	private final JumpAndRun jumpAndRun;
+	private final JumpAndRunCheckpoint checkpoint;
 	private boolean cancelled = false;
-
-	public @NotNull HandlerList getHandlers() {
-		return HANDLERS;
+	private String command;
+	public AddJnrCmdEvent(Player player, JumpAndRun jnr, JumpAndRunCheckpoint checkpoint, String command) {
+		super(player);
+		this.checkpoint = checkpoint;
+		this.command = command;
+		jumpAndRun = jnr;
 	}
 
 	public static HandlerList getHandlerList() {
 		return HANDLERS;
 	}
 
-	private final JumpAndRun jumpAndRun;
-	private final JumpAndRunCheckpoint checkpoint;
-	private String command;
-
-	public AddJnrCmdEvent(Player player, JumpAndRun jnr, JumpAndRunCheckpoint checkpoint, String command) {
-		super(player);
-		this.checkpoint = checkpoint;
-		this.command = command;
-		jumpAndRun = jnr;
+	public @NotNull HandlerList getHandlers() {
+		return HANDLERS;
 	}
 
 	public JumpAndRun getJumpAndRun() {

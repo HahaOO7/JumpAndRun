@@ -93,7 +93,7 @@ public class JumpAndRunListener implements Listener {
 	}
 
 	@EventHandler
-	void onStopJnr(StopJnrEvent event){
+	void onStopJnr(StopJnrEvent event) {
 		event.getPlayer().updateInventory();
 	}
 

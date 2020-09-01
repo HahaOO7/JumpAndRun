@@ -10,13 +10,19 @@ import org.jetbrains.annotations.NotNull;
 public class StartJnrEvent extends PlayerEvent implements Cancellable {
 
 	private static final HandlerList HANDLERS = new HandlerList();
+	private final JumpAndRun jumpAndRun;
 	private boolean cancelled = false;
 
-	public @NotNull HandlerList getHandlers() {
-		return HANDLERS;
+	public StartJnrEvent(Player player, JumpAndRun jumpAndRun) {
+		super(player);
+		this.jumpAndRun = jumpAndRun;
 	}
 
 	public static HandlerList getHandlerList() {
+		return HANDLERS;
+	}
+
+	public @NotNull HandlerList getHandlers() {
 		return HANDLERS;
 	}
 
@@ -28,13 +34,6 @@ public class StartJnrEvent extends PlayerEvent implements Cancellable {
 	@Override
 	public void setCancelled(boolean cancel) {
 		cancelled = cancel;
-	}
-
-	private final JumpAndRun jumpAndRun;
-
-	public StartJnrEvent(Player player, JumpAndRun jumpAndRun) {
-		super(player);
-		this.jumpAndRun = jumpAndRun;
 	}
 
 	public JumpAndRun getJumpAndRun() {

@@ -10,21 +10,20 @@ import org.jetbrains.annotations.NotNull;
 public class CreateJnrEvent extends PlayerEvent implements Cancellable {
 
 	private static final HandlerList HANDLERS = new HandlerList();
+	private final JumpAndRun jumpAndRun;
 	private boolean cancelled = false;
 
-	public @NotNull HandlerList getHandlers() {
-		return HANDLERS;
+	public CreateJnrEvent(Player player, JumpAndRun jumpAndRun) {
+		super(player);
+		this.jumpAndRun = jumpAndRun;
 	}
 
 	public static HandlerList getHandlerList() {
 		return HANDLERS;
 	}
 
-	private final JumpAndRun jumpAndRun;
-
-	public CreateJnrEvent(Player player, JumpAndRun jumpAndRun) {
-		super(player);
-		this.jumpAndRun = jumpAndRun;
+	public @NotNull HandlerList getHandlers() {
+		return HANDLERS;
 	}
 
 	public JumpAndRun getJumpAndRun() {

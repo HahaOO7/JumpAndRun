@@ -1,6 +1,6 @@
 package at.haha007.minigames.jumpandrun;
 
-import net.minecraft.server.v1_16_R1.Items;
+import net.minecraft.server.v1_16_R2.Items;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -9,14 +9,14 @@ import org.bukkit.util.Vector;
 import java.util.HashMap;
 import java.util.UUID;
 
-import static at.haha007.minigames.jumpandrun.Utils.*;
+import static at.haha007.edenlib.utils.ItemUtils.*;
 
 public class JumpAndRunPlayer {
 	private final HashMap<String, Integer> checkPoints;
 	private final HashMap<String, Integer> reachedCheckpoints;
 	private final HashMap<String, Long> runTimestamps;
-	private JumpAndRun activeJumpAndRun;
 	private final UUID uuid;
+	private JumpAndRun activeJumpAndRun;
 
 	public JumpAndRunPlayer(HashMap<String, Integer> checkPoints, HashMap<String, Integer> reachedCheckpoints, HashMap<String, Long> runTimestamps, JumpAndRun activeJumpAndRun, UUID uuid) {
 		this.checkPoints = checkPoints;

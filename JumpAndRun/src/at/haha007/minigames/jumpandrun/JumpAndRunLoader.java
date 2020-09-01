@@ -1,5 +1,7 @@
 package at.haha007.minigames.jumpandrun;
 
+import at.haha007.edenlib.database.SqliteDatabase;
+import at.haha007.edenlib.utils.Utils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -19,13 +21,14 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public class JumpAndRunLoader {
-	private File jnrFolder = new File(JumpAndRunPlugin.getInstance().getDataFolder(), "JumpAndRuns");
-	private SqliteDB db;
+	private final File jnrFolder = new File(JumpAndRunPlugin.getInstance().getDataFolder(), "JumpAndRuns");
+	private SqliteDatabase db;
 
 	public JumpAndRunLoader() {
 		try {
-			db = new SqliteDB("jdbc:sqlite:plugins/JumpAndRun/jnrPlayers.db");
-			db.executeStmt("create table if not exists players (uuid VARCHAR(36), data blob(256), PRIMARY KEY (uuid))");
+			db = new SqliteDatabase(JumpAndRunPlugin.getInstance(), "jnrPlayers.db");
+			db.connect();
+			db.prepareStatement("create table if not exists players (uuid VARCHAR(36), data blob(256), PRIMARY KEY (uuid))").executeUpdate();
 		} catch (SQLException exception) {
 			exception.printStackTrace();
 		}
@@ -142,7 +145,7 @@ public class JumpAndRunLoader {
 				BufferedReader reader =
 					new BufferedReader(new InputStreamReader(new GZIPInputStream(new ByteArrayInputStream(rs.getBytes(1))), StandardCharsets.UTF_8));
 				StringBuilder sb = new StringBuilder();
-				reader.lines().forEach(str -> sb.append(str + System.lineSeparator()));
+				reader.lines().forEach(str -> sb.append(str).append(System.lineSeparator()));
 				reader.close();
 				cfg = YamlConfiguration.loadConfiguration(new StringReader(sb.toString()));
 			}
@@ -195,7 +198,7 @@ public class JumpAndRunLoader {
 
 	@Nullable
 	public JumpAndRunPlayer loadJumpAndRunPlayer(String name) {
-		// should only be used when player is not onlineist
+		// should only be used when player is not online
 		UUID uuid = Utils.getUUID(name);
 		if (uuid == null) return null;
 		loadJumpAndRunPlayer(uuid);

@@ -3,6 +3,8 @@ version: 1.0
 api-version: 1.15
 name: JumpAndRun
 author: Haha007
+depend:
+- EdenLib
 softdepend:
 - Vault
 commands:

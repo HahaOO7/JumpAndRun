@@ -1,5 +1,7 @@
 package at.haha007.minigames.jumpandrun;
 
+import at.haha007.edenlib.utils.ItemUtils;
+import at.haha007.edenlib.utils.Utils;
 import at.haha007.minigames.jumpandrun.events.AddJnrCmdEvent;
 import at.haha007.minigames.jumpandrun.events.CreateJnrEvent;
 import at.haha007.minigames.jumpandrun.events.DeleteJnrEvent;
@@ -10,6 +12,7 @@ import org.bukkit.Material;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -23,7 +26,6 @@ import java.util.stream.Collectors;
 
 
 public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listener {
-	//	private final String titleCreateJnr = ChatColor.GREEN + "Create JNR";
 	private final String titleMainMenu = ChatColor.GREEN + "JNR menu";
 	private final String titleCheckpointMenu = ChatColor.GREEN + "JNR Checkpoint Menu";
 	private final String[] explanation = {
@@ -170,7 +172,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 			if (index > jnrList.size() - 1)
 				break;
 			JumpAndRun jnr = jnrList.get(index);
-			inv.setItem(index, Utils.getItem(
+			inv.setItem(index, ItemUtils.getItem(
 				Material.LIGHT_WEIGHTED_PRESSURE_PLATE,
 				ChatColor.GREEN + jnr.getName(),
 				ChatColor.GOLD + "Checkpoints: " + ChatColor.AQUA + jnr.size(),
@@ -180,7 +182,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 
 		// next page, create jnr etc last line
 		inv.setItem(45, getArrowLeft());
-		inv.setItem(46, Utils.getItem(Material.BOOK, "Explanation", explanation));
+		inv.setItem(46, ItemUtils.getItem(Material.BOOK, "Explanation", explanation));
 		inv.setItem(53, getArrowRight());
 		player.openInventory(inv);
 	}
@@ -189,7 +191,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 		event.setCancelled(true);
 		if (event.getClickedInventory() != event.getView().getTopInventory())
 			return;
-		int page = Utils.getNbtInt(event.getInventory().getItem(49), "page");
+		int page = ItemUtils.getNbtInt(event.getInventory().getItem(49), "page");
 		switch (event.getSlot()) {
 			case 45:
 				openMainJnrMenu((Player) event.getWhoClicked(), page - 1);
@@ -213,7 +215,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 					JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(jnrName);
 					if (jnr == null)
 						break;
-					Utils.giveItem((Player) event.getWhoClicked(), JumpAndRunPlugin.getEditor().getEditorTool(jnr, jnr.size()));
+					ItemUtils.giveItem((Player) event.getWhoClicked(), JumpAndRunPlugin.getEditor().getEditorTool(jnr, jnr.size()));
 					JumpAndRunPlugin.getEditor().displayPath((Player) event.getWhoClicked(), jnr, 0);
 				} else if (event.getClick() == ClickType.LEFT) {
 					ItemStack item = event.getCurrentItem();
@@ -237,10 +239,10 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 		JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayer(player.getUniqueId());
 		int reached = jnrPlayer.getMaxCheckpoint(jnr);
 		for (int i = 0; i < 45; i++) {
-			int cpIndex = i + 54 * page;
+			int cpIndex = i + 45 * page;
 			JumpAndRunCheckpoint cp = jnr.getCheckpoint(cpIndex);
 			if (cp == null) break;
-			ItemStack cpItem = Utils.setNbtInt(Utils.getItem(cpIndex > reached ? Material.DIRT : Material.GRASS_BLOCK, ChatColor.GOLD + "CP " + cpIndex), "index", cpIndex);
+			ItemStack cpItem = ItemUtils.setNbtInt(ItemUtils.getItem(cpIndex > reached ? Material.DIRT : Material.GRASS_BLOCK, ChatColor.GOLD + "CP " + cpIndex), "index", cpIndex);
 			inv.setItem(i, cpItem);
 		}
 
@@ -251,21 +253,23 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 		itemMeta.setLore(lore);
 		editorTool.setItemMeta(itemMeta);
 		if (player.hasPermission("jnr.command.use"))
-			inv.setItem(49, Utils.setNbtInt(editorTool, "page", page));
-		ItemStack left = Utils.setNbtString(Utils.setNbtInt(getArrowLeft(), "page", page), "jnr", jnr.getName());
+			inv.setItem(49, ItemUtils.setNbtInt(editorTool, "page", page));
+		ItemStack left = ItemUtils.setNbtString(ItemUtils.setNbtInt(getArrowLeft(), "page", page), "jnr", jnr.getName());
 
 		inv.setItem(45, left);
 		inv.setItem(53, getArrowRight());
 
 		player.openInventory(inv);
-		Bukkit.getScheduler().runTaskLater(JumpAndRunPlugin.getInstance(), jnrPlayer::fillJnrInventory, 1);
+		if (JumpAndRunPlugin.getPlayerIfActive(player) != null)
+			Bukkit.getScheduler().runTaskLater(JumpAndRunPlugin.getInstance(), jnrPlayer::fillJnrInventory, 1);
 	}
 
 	private void handleJnrMenuClick(InventoryClickEvent event) {
+		//TODO next page while in jnr
 		event.setCancelled(true);
 		if (event.getClickedInventory() != event.getView().getTopInventory()) return;
-		int page = Utils.getNbtInt(event.getInventory().getItem(45), "page");
-		JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(Utils.getNbtString(event.getInventory().getItem(45), "jnr"));
+		int page = ItemUtils.getNbtInt(event.getInventory().getItem(45), "page");
+		JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(ItemUtils.getNbtString(event.getInventory().getItem(45), "jnr"));
 		if (jnr == null) {
 			event.getWhoClicked().closeInventory();
 			return;
@@ -289,7 +293,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 				ItemStack cpItem = event.getCurrentItem();
 				if (cpItem == null) break;
 				if (cpItem.getType() == Material.DIRT) break;
-				int cp = Utils.getNbtInt(cpItem, "index");
+				int cp = ItemUtils.getNbtInt(cpItem, "index");
 				JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayerIfActive((Player) event.getWhoClicked());
 				if (jnrPlayer != null) {
 					jnrPlayer.setCheckpoint(jnr, cp);
@@ -302,7 +306,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 		}
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.LOW)
 	void onInventoryClick(InventoryClickEvent event) {
 		String title = event.getView().getTitle();
 		if (title.equals(titleCheckpointMenu))
@@ -312,7 +316,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 	}
 
 	private ItemStack getArrowRight() {
-		ItemStack item = Utils.getSkull(
+		ItemStack item = ItemUtils.getSkull(
 			"ewogICJ0aW1lc3RhbXAiIDogMTU5MDg1NTAyMTg0OCwKICAicHJvZmlsZUlkIiA6ICI1MGM4NTEwYjVlYTA0ZDYwYmU5YTdkNTQy"
 				+ "ZDZjZDE1NiIsCiAgInByb2ZpbGVOYW1lIiA6ICJNSEZfQXJyb3dSaWdodCIsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0"
 				+ "lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9kMzRlZjA2Mzg1"
@@ -324,7 +328,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 	}
 
 	private ItemStack getArrowLeft() {
-		ItemStack item = Utils.getSkull(
+		ItemStack item = ItemUtils.getSkull(
 			"ewogICJ0aW1lc3RhbXAiIDogMTU5MDg1NTI4OTM2MiwKICAicHJvZmlsZUlkIiA6ICJhNjhmMGI2NDhkMTQ0MDAwYTk1ZjRiOWJh"
 				+ "MTRmOGRmOSIsCiAgInByb2ZpbGVOYW1lIiA6ICJNSEZfQXJyb3dMZWZ0IiwKICAidGV4dHVyZXMiIDogewogICAgIlNLSU"
 				+ "4iIDogewogICAgICAidXJsIiA6ICJodHRwOi8vdGV4dHVyZXMubWluZWNyYWZ0Lm5ldC90ZXh0dXJlL2Y3YWFjYWQxOTNl"

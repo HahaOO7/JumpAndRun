@@ -11,9 +11,9 @@ import java.util.UUID;
 
 public class JumpAndRun {
 	private final String name;
-	Location location;
 	private final List<JumpAndRunCheckpoint> checkpoints;
 	private final HashMap<UUID, Long> highscores;
+	Location location;
 
 	public JumpAndRun(String name, Location location, List<JumpAndRunCheckpoint> checkpoints,
 	                  HashMap<UUID, Long> highscores) {
@@ -68,11 +68,11 @@ public class JumpAndRun {
 		return -1;
 	}
 
-	public void setLeavePoint(Location location) {
-		this.location = location;
-	}
-
 	public Location getLeavePoint() {
 		return location;
+	}
+
+	public void setLeavePoint(Location location) {
+		this.location = location;
 	}
 }

@@ -11,13 +11,23 @@ import org.jetbrains.annotations.NotNull;
 public class AddJnrCheckpointEvent extends PlayerEvent implements Cancellable {
 
 	private static final HandlerList HANDLERS = new HandlerList();
+	private final JumpAndRun jnr;
+	private final JumpAndRunCheckpoint checkpoint;
+	private final int index;
 	private boolean cancelled = false;
 
-	public @NotNull HandlerList getHandlers() {
-		return HANDLERS;
+	public AddJnrCheckpointEvent(JumpAndRun jnr, JumpAndRunCheckpoint checkpoint, int index, Player player) {
+		super(player);
+		this.checkpoint = checkpoint;
+		this.index = index;
+		this.jnr = jnr;
 	}
 
 	public static HandlerList getHandlerList() {
+		return HANDLERS;
+	}
+
+	public @NotNull HandlerList getHandlers() {
 		return HANDLERS;
 	}
 
@@ -29,17 +39,6 @@ public class AddJnrCheckpointEvent extends PlayerEvent implements Cancellable {
 	@Override
 	public void setCancelled(boolean cancel) {
 		cancelled = cancel;
-	}
-
-	private final JumpAndRun jnr;
-	private final JumpAndRunCheckpoint checkpoint;
-	private final int index;
-
-	public AddJnrCheckpointEvent(JumpAndRun jnr, JumpAndRunCheckpoint checkpoint, int index, Player player) {
-		super(player);
-		this.checkpoint = checkpoint;
-		this.index = index;
-		this.jnr = jnr;
 	}
 
 	public int getIndex() {
