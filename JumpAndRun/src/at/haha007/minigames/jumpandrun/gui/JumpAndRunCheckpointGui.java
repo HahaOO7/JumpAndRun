@@ -17,6 +17,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,8 +27,10 @@ public class JumpAndRunCheckpointGui implements @NotNull Listener {
 	private static final String titleCheckpointMenu = ChatColor.GREEN + "JNR Checkpoint Menu";
 	private static ItemStack arrowRight;
 	private static ItemStack arrowLeft;
+	private final Plugin plugin;
 
 	public JumpAndRunCheckpointGui(JavaPlugin plugin) {
+		this.plugin = plugin;
 		Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
 
 		arrowRight = ItemUtils.getSkull(
@@ -109,7 +112,7 @@ public class JumpAndRunCheckpointGui implements @NotNull Listener {
 
 		switch (event.getSlot()) {
 			case 53:
-				open((Player) event.getWhoClicked(), jnr, page + 1);
+				Bukkit.getScheduler().runTaskLater(plugin, () -> open((Player) event.getWhoClicked(), jnr, page + 1), 0);
 				break;
 			case 49:
 				if (!event.getWhoClicked().hasPermission("jnr.command.use")) break;
@@ -117,7 +120,7 @@ public class JumpAndRunCheckpointGui implements @NotNull Listener {
 				JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
 				break;
 			case 45:
-				open((Player) event.getWhoClicked(), jnr, page - 1);
+				Bukkit.getScheduler().runTaskLater(plugin, () -> open((Player) event.getWhoClicked(), jnr, page - 1), 0);
 				break;
 			default:
 				if (event.getSlot() >= 45)

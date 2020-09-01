@@ -17,6 +17,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
@@ -30,8 +31,10 @@ import static at.haha007.edenlib.utils.ItemUtils.getSkull;
 public class JumpAndRunCheckpointEditorGui implements @NotNull Listener {
 	private static final String titleCpEditor = ChatColor.GREEN + "Checkpoint Editor";
 	private static ItemStack arrow;
+	private final Plugin plugin;
 
 	public JumpAndRunCheckpointEditorGui(JavaPlugin plugin) {
+		this.plugin = plugin;
 		Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
 
 		arrow = getSkull(
@@ -116,7 +119,7 @@ public class JumpAndRunCheckpointEditorGui implements @NotNull Listener {
 					ChatColor.AQUA + "Multiplyer: {2}" + ChatColor.DARK_AQUA,
 					""));
 				cp.setMoney(cp.getMoney() + (event.getClick().isLeftClick() ? (Math.pow(10, moneyDif)) : -(Math.pow(10, moneyDif))));
-				open((Player) event.getWhoClicked(), jnr, checkpointIndex, moneyDif);
+				Bukkit.getScheduler().runTaskLater(plugin, () -> open((Player) event.getWhoClicked(), jnr, checkpointIndex, moneyDif), 0);
 				JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
 				break;
 
@@ -125,10 +128,10 @@ public class JumpAndRunCheckpointEditorGui implements @NotNull Listener {
 				if (item == null) break;
 				lore = item.getItemMeta().getLore();
 				if (lore == null) break;
-				open((Player) event.getWhoClicked(), jnr, checkpointIndex,
+				Bukkit.getScheduler().runTaskLater(plugin, () -> open((Player) event.getWhoClicked(), jnr, checkpointIndex,
 					Integer.parseInt(lore.get(1).replaceFirst(
 						ChatColor.AQUA + "Multiplyer: {2}" + ChatColor.DARK_AQUA,
-						"")) + (event.getClick().isLeftClick() ? 1 : -1));
+						"")) + (event.getClick().isLeftClick() ? 1 : -1)), 0);
 				break;
 			case 8:
 
