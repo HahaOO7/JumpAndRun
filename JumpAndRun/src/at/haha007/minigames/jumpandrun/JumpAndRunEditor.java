@@ -178,10 +178,10 @@ public class JumpAndRunEditor implements Listener {
 			Utils.addGlow(player, checkpointIDs[i]);
 		}
 		if (selected > 0) {
-			Utils.colorClow(player, EnumChatFormat.RED, uuids[selected - 1]);
+			Utils.colorGlow(player, EnumChatFormat.RED, uuids[selected - 1]);
 		}
 		if (selected < uuids.length && selected >= 0) {
-			Utils.colorClow(player, EnumChatFormat.BLUE, uuids[selected]);
+			Utils.colorGlow(player, EnumChatFormat.BLUE, uuids[selected]);
 		}
 		Collections.addAll(idList, checkpointIDs);
 
