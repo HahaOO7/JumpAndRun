@@ -25,11 +25,6 @@
         </repository>
     </repositories>
     <dependencies>
-<!--        <dependency>-->
-<!--            <groupId>com.github.HahaOO7</groupId>-->
-<!--            <artifactId>EdenLib</artifactId>-->
-<!--            <version>development-268d484fab-1</version>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>at.haha007</groupId>
             <artifactId>edenlib</artifactId>

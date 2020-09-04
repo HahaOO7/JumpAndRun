@@ -59,6 +59,7 @@ public class JumpAndRunLoader {
 
 		String name = cfg.getString("name");
 		String world = cfg.getString("world");
+		boolean highlighted = cfg.getBoolean("highlighted");
 
 		List<?> checkpointSections = cfg.getList("checkpoints");
 		if (checkpointSections == null || world == null) {
@@ -67,6 +68,7 @@ public class JumpAndRunLoader {
 		}
 
 		for (Object obj : checkpointSections) {
+			//List<ConfigurationSection> does not exist...
 			LinkedHashMap<String, Object> hashMap = (LinkedHashMap<String, Object>) obj;
 			checkpoints.add(new JumpAndRunCheckpoint(
 				(int) hashMap.get("x"),
@@ -91,7 +93,7 @@ public class JumpAndRunLoader {
 			(float) cfg.getDouble("pitch"));
 
 
-		return new JumpAndRun(name, loc, checkpoints, highScores);
+		return new JumpAndRun(name, loc, checkpoints, highScores, highlighted);
 	}
 
 	public void saveJumpAndRun(JumpAndRun jnr) {
@@ -100,6 +102,7 @@ public class JumpAndRunLoader {
 
 		Location loc = jnr.getLeavePoint();
 		cfg.set("name", jnr.getName());
+		cfg.set("highlighted", jnr.shouldHighlightNextCheckpoint());
 		cfg.set("world", jnr.getWorld().getName());
 		cfg.set("x", loc.getX());
 		cfg.set("y", loc.getY());
@@ -186,12 +189,12 @@ public class JumpAndRunLoader {
 				os.close();
 				byte[] data = bos.toByteArray();
 				PreparedStatement ps = db.prepareStatement("REPLACE INTO players VALUES(?, ?)");
-				ps.setString(1, player.getUuid().toString());
+				ps.setString(1, player.getPlayerUUID().toString());
 				ps.setBytes(2, data);
 				ps.executeUpdate();
 			} catch (IOException | SQLException e) {
 				e.printStackTrace();
-				Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[JNR] Error while saving player: " + ChatColor.AQUA + player.getUuid());
+				Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[JNR] Error while saving player: " + ChatColor.AQUA + player.getPlayerUUID());
 			}
 		});
 	}

@@ -79,9 +79,13 @@ public class JumpAndRunCheckpointGui implements @NotNull Listener {
 		if (player.hasPermission("jnr.command.use"))
 			inv.setItem(49, ItemUtils.setNbtInt(editorTool, "page", page));
 		ItemStack left = ItemUtils.setNbtString(ItemUtils.setNbtInt(getArrowLeft(), "page", page), "jnr", jnr.getName());
+		ItemStack highlight = ItemUtils.getItem(Material.LIGHT_WEIGHTED_PRESSURE_PLATE, ChatColor.GOLD + "Show next checkpoint", ChatColor.AQUA.toString() + jnr.shouldHighlightNextCheckpoint());
+		if (jnr.shouldHighlightNextCheckpoint())
+			highlight = ItemUtils.setGlow(highlight, true);
 
 		inv.setItem(45, left);
 		inv.setItem(53, getArrowRight());
+		inv.setItem(51, highlight);
 
 		player.openInventory(inv);
 		if (JumpAndRunPlugin.getPlayerIfActive(player) != null)
@@ -121,6 +125,11 @@ public class JumpAndRunCheckpointGui implements @NotNull Listener {
 				break;
 			case 45:
 				Bukkit.getScheduler().runTaskLater(plugin, () -> open((Player) event.getWhoClicked(), jnr, page - 1), 0);
+				break;
+			case 51:
+				jnr.setHighlightNextCheckpoint(!jnr.shouldHighlightNextCheckpoint());
+				JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
+				Bukkit.getScheduler().runTask(plugin, () -> open((Player) event.getWhoClicked(), jnr, page));
 				break;
 			default:
 				if (event.getSlot() >= 45)

@@ -1,5 +1,7 @@
 package at.haha007.minigames.jumpandrun;
 
+import at.haha007.edenlib.utils.Utils;
+import net.minecraft.server.v1_16_R2.Blocks;
 import net.minecraft.server.v1_16_R2.Items;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -7,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
+import java.util.Random;
 import java.util.UUID;
 
 import static at.haha007.edenlib.utils.ItemUtils.*;
@@ -15,14 +18,16 @@ public class JumpAndRunPlayer {
 	private final HashMap<String, Integer> checkPoints;
 	private final HashMap<String, Integer> reachedCheckpoints;
 	private final HashMap<String, Long> runTimestamps;
-	private final UUID uuid;
+	private final UUID playerUUID;
+	private int highlightedCheckpointId;
 	private JumpAndRun activeJumpAndRun;
+	private final Random random = new Random();
 
 	public JumpAndRunPlayer(HashMap<String, Integer> checkPoints, HashMap<String, Integer> reachedCheckpoints, HashMap<String, Long> runTimestamps, JumpAndRun activeJumpAndRun, UUID uuid) {
 		this.checkPoints = checkPoints;
 		this.reachedCheckpoints = reachedCheckpoints;
 		this.activeJumpAndRun = activeJumpAndRun;
-		this.uuid = uuid;
+		this.playerUUID = uuid;
 		this.runTimestamps = runTimestamps;
 	}
 
@@ -52,10 +57,12 @@ public class JumpAndRunPlayer {
 		JumpAndRunCheckpoint cp = getActiveCheckpoint();
 		if (cp == null)
 			return;
-		Player player = Bukkit.getPlayer(uuid);
+		Player player = Bukkit.getPlayer(playerUUID);
 		if (player == null)
 			return;
 		Vector pos = cp.getPos();
+		if (activeJumpAndRun.shouldHighlightNextCheckpoint())
+			highlightCheckpoint(player, activeJumpAndRun.getCheckpoint(getActiveCheckPointIndex(activeJumpAndRun) + 1));
 		player.teleport(new Location(
 			getActiveJumpAndRun().getWorld(),
 			pos.getX(),
@@ -71,8 +78,17 @@ public class JumpAndRunPlayer {
 		Bukkit.getScheduler().runTaskLater(JumpAndRunPlugin.getInstance(), this::fillJnrInventory, 1);
 	}
 
+	private void highlightCheckpoint(Player player, JumpAndRunCheckpoint cp) {
+		if (highlightedCheckpointId != 0)
+			Utils.destroyFakeEntity(player, highlightedCheckpointId);
+		if (cp == null) return;
+		highlightedCheckpointId = random.nextInt();
+		Utils.displayFakeBlock(player, cp.getPos(), Blocks.LIGHT_WEIGHTED_PRESSURE_PLATE, highlightedCheckpointId, UUID.randomUUID());
+		Utils.addGlow(player, highlightedCheckpointId);
+	}
+
 	public void fillJnrInventory() {
-		Player player = Bukkit.getPlayer(uuid);
+		Player player = Bukkit.getPlayer(playerUUID);
 		if (player == null)
 			return;
 
@@ -87,23 +103,29 @@ public class JumpAndRunPlayer {
 	private void reachCheckpoint() {
 		if (activeJumpAndRun == null)
 			return;
-		int activeCheckpintIndex = checkPoints.getOrDefault(activeJumpAndRun.getName(), 0);
-		checkPoints.put(activeJumpAndRun.getName(), activeCheckpintIndex + 1);
+		int activeCheckpointIndex = checkPoints.getOrDefault(activeJumpAndRun.getName(), 0);
+		checkPoints.put(activeJumpAndRun.getName(), activeCheckpointIndex + 1);
 		int maxCheckpointIndex = reachedCheckpoints.getOrDefault(activeJumpAndRun.getName(), 0);
-		OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
+		OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
 		Player player = offlinePlayer.getPlayer();
+		JumpAndRunCheckpoint checkpoint = getActiveCheckpoint();
+		if (checkpoint == null) return;
 		if (player != null) {
+			if (activeJumpAndRun.shouldHighlightNextCheckpoint()) {
+				highlightCheckpoint(player, activeJumpAndRun.getCheckpoint(activeCheckpointIndex + 2));
+				player.sendBlockChange(checkpoint.getPos().toLocation(player.getWorld()), player.getWorld().getBlockAt(checkpoint.getPosX(), checkpoint.getPosY(), checkpoint.getPosZ()).getBlockData());
+			}
 			player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1f, 1f);
 			player.spawnParticle(Particle.PORTAL, player.getLocation(), 500);
 			player.sendActionBar(ChatColor.GOLD + "Checkpoint Erreicht!");
 		}
-		if (activeCheckpintIndex == maxCheckpointIndex) {
-			reachedCheckpoints.put(activeJumpAndRun.getName(), activeCheckpintIndex + 1);
-			JumpAndRunCheckpoint checkpoint = getActiveCheckpoint();
+		if (activeCheckpointIndex == maxCheckpointIndex) {
+			reachedCheckpoints.put(activeJumpAndRun.getName(), activeCheckpointIndex + 1);
 			double money = checkpoint.getMoney();
 			if (money > 0) {
 				JumpAndRunPlugin.getEconomy().depositPlayer(offlinePlayer, checkpoint.getMoney());
-				player.sendMessage(ChatColor.GOLD + "Du hast " + ChatColor.YELLOW + checkpoint.getMoney() + "$" + ChatColor.GOLD + " erhalten.");
+				if (player != null)
+					player.sendMessage(ChatColor.GOLD + "Du hast " + ChatColor.YELLOW + checkpoint.getMoney() + "$" + ChatColor.GOLD + " erhalten.");
 			}
 			for (String command : checkpoint.getCommands()) {
 				Bukkit.getScheduler().runTask(
@@ -135,8 +157,8 @@ public class JumpAndRunPlayer {
 		return activeJumpAndRun.getCheckpoint(checkPoints.getOrDefault(activeJumpAndRun.getName(), 0));
 	}
 
-	public UUID getUuid() {
-		return uuid;
+	public UUID getPlayerUUID() {
+		return playerUUID;
 	}
 
 	public HashMap<String, Integer> getCheckPoints() {

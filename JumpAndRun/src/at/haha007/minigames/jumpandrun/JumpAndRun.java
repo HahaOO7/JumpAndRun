@@ -13,14 +13,24 @@ public class JumpAndRun {
 	private final String name;
 	private final List<JumpAndRunCheckpoint> checkpoints;
 	private final HashMap<UUID, Long> highscores;
+	private boolean highlightNextCheckpoint;
 	Location location;
 
 	public JumpAndRun(String name, Location location, List<JumpAndRunCheckpoint> checkpoints,
-	                  HashMap<UUID, Long> highscores) {
+	                  HashMap<UUID, Long> highscores, boolean highlightNextCheckpoint) {
 		this.checkpoints = checkpoints == null ? new ArrayList<>() : new ArrayList<>(checkpoints);
 		this.highscores = highscores == null ? new HashMap<>() : highscores;
 		this.name = name;
 		this.location = location;
+		this.highlightNextCheckpoint = highlightNextCheckpoint;
+	}
+
+	public boolean shouldHighlightNextCheckpoint() {
+		return highlightNextCheckpoint;
+	}
+
+	public void setHighlightNextCheckpoint(boolean should) {
+		highlightNextCheckpoint = should;
 	}
 
 	public void teleportToCheckpoint(Player player) {

@@ -74,7 +74,8 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 						0f,
 						null,
 						0d)),
-				new HashMap<>());
+				new HashMap<>(),
+				false);
 
 			CreateJnrEvent createJnrEvent = new CreateJnrEvent(player, jnr);
 			Bukkit.getPluginManager().callEvent(createJnrEvent);

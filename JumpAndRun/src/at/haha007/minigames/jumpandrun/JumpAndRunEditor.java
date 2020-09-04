@@ -51,11 +51,11 @@ public class JumpAndRunEditor implements Listener {
 			// Insert Checkpoint
 			Player player = e.getPlayer();
 			if (!cooldownPlayers.contains(player)) {
-				insertCheckpoint(jnr, checkpoint, player, e.getClickedBlock());
+				Block targetBlock = player.getTargetBlock(100);
+				if (targetBlock == null) return;
+				insertCheckpoint(jnr, checkpoint, player, targetBlock);
 				cooldownPlayers.add(player);
-				Bukkit.getScheduler().runTaskLater(JumpAndRunPlugin.getInstance(), () -> {
-					cooldownPlayers.remove(player);
-				}, 10);
+				Bukkit.getScheduler().runTaskLater(JumpAndRunPlugin.getInstance(), () -> cooldownPlayers.remove(player), 10);
 			}
 		}
 	}
