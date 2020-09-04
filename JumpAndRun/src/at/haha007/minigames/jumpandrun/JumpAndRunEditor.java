@@ -47,7 +47,7 @@ public class JumpAndRunEditor implements Listener {
 			// Edit Checkpoint
 			JumpAndRunCheckpointEditorGui.open(e.getPlayer(), jnr, checkpoint, 1);
 		}
-		if (e.getAction() == Action.RIGHT_CLICK_BLOCK) {
+		if (e.getAction() == Action.RIGHT_CLICK_BLOCK || e.getAction() == Action.RIGHT_CLICK_AIR) {
 			// Insert Checkpoint
 			Player player = e.getPlayer();
 			if (!cooldownPlayers.contains(player)) {
