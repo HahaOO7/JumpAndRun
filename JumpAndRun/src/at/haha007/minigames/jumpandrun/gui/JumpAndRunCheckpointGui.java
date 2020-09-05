@@ -143,6 +143,7 @@ public class JumpAndRunCheckpointGui implements @NotNull Listener {
 				int cp = ItemUtils.getNbtInt(cpItem, "index");
 				if (jnrPlayer != null) {
 					ChangeJnrCheckpointEvent ev = new ChangeJnrCheckpointEvent(jnr, jnrPlayer, player, jnrPlayer.getActiveCheckPointIndex(jnr), cp);
+					Bukkit.getServer().getPluginManager().callEvent(ev);
 					if (ev.isCancelled()) break;
 					jnrPlayer.setCheckpoint(jnr, ev.getTo());
 					jnrPlayer.respawn();

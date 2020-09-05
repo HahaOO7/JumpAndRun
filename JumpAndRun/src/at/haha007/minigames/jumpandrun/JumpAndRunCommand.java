@@ -74,7 +74,7 @@ public class JumpAndRunCommand implements CommandExecutor, TabCompleter, Listene
 						0f,
 						null,
 						0d)),
-				new HashMap<>(),
+				new ArrayList<>(),
 				false);
 
 			CreateJnrEvent createJnrEvent = new CreateJnrEvent(player, jnr);

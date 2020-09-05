@@ -51,7 +51,6 @@ public class JumpAndRunLoader {
 	public JumpAndRun loadJumpAndRun(File file) {
 		YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
 
-		HashMap<UUID, Long> highScores = new HashMap<>();
 		List<JumpAndRunCheckpoint> checkpoints = new ArrayList<>();
 
 		String name = cfg.getString("name");
@@ -78,8 +77,10 @@ public class JumpAndRunLoader {
 		}
 
 		ConfigurationSection highscoreSection = cfg.getConfigurationSection("highscores");
+		List<JumpAndRun.JnrScore> highScores = new ArrayList<>();
 		if (highscoreSection != null)
-			highscoreSection.getKeys(false).forEach(key -> highScores.put(UUID.fromString(key), highscoreSection.getLong(key)));
+			highscoreSection.getKeys(false).forEach(key -> highScores.add(new JumpAndRun.JnrScore(UUID.fromString(key), highscoreSection.getLong(key))));
+		highScores.sort(Comparator.comparingLong(s -> s.time));
 
 		World w = Bukkit.getWorld(world);
 		Location loc = new Location(w,
@@ -107,7 +108,7 @@ public class JumpAndRunLoader {
 		cfg.set("yaw", loc.getYaw());
 		cfg.set("pitch", loc.getPitch());
 
-		jnr.getHighscores().forEach((uuid, time) -> cfg.set("highscores." + uuid.toString(), time));
+		jnr.getHighscores().forEach((score) -> cfg.set("highscores." + score.uuid.toString(), score.time));
 		List<ConfigurationSection> checkpoints = new ArrayList<>(jnr.size());
 		jnr.getCheckpoints().forEach((checkpoint) -> {
 			YamlConfiguration checkpointConfig = new YamlConfiguration();

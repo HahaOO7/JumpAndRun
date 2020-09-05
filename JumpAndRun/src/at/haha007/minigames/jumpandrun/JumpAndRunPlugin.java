@@ -7,6 +7,7 @@ import at.haha007.minigames.jumpandrun.gui.JumpAndRunManagementGui;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -27,10 +28,11 @@ public class JumpAndRunPlugin extends JavaPlugin {
 	private static HashSet<JumpAndRun> jumpAndRuns;
 
 	public static void startJumpAndRun(JumpAndRun jnr, Player player) {
-		StartJnrEvent event = new StartJnrEvent(player, jnr);
+		JumpAndRunPlayer jnrPlayer = getPlayer(player);
+		int cp = jnrPlayer.getActiveCheckPointIndex(jnr);
+		StartJnrEvent event = new StartJnrEvent(player, jnr, jnrPlayer, cp);
 		Bukkit.getPluginManager().callEvent(event);
 		if (event.isCancelled()) return;
-		JumpAndRunPlayer jnrPlayer = getPlayer(player);
 		jnrPlayer.setActiveJnr(jnr);
 		jnrPlayer.respawn();
 	}
@@ -106,7 +108,8 @@ public class JumpAndRunPlugin extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		instance = this;
-		if (!getDataFolder().exists()) getDataFolder().mkdirs();
+		//try to create datafolder. if not possible throw exception
+		assert getDataFolder().exists() || getDataFolder().mkdirs();
 		if (!setupEconomy())
 			Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[JumpAndRun] Failed to connect to economy!");
 		players = new HashMap<>();
@@ -115,11 +118,14 @@ public class JumpAndRunPlugin extends JavaPlugin {
 		jumpAndRuns = loader.loadAllJumpAndRuns();
 
 		cmd = new JumpAndRunCommand();
-		getCommand("jumpandrun").setExecutor(cmd);
-		getCommand("jumpandrun").setTabCompleter(cmd);
+		PluginCommand command = getCommand("jumpandrun");
+		assert command != null;
+		command.setExecutor(cmd);
+		command.setTabCompleter(cmd);
 		getServer().getPluginManager().registerEvents(cmd, this);
 		getServer().getPluginManager().registerEvents(editor, this);
 		getServer().getPluginManager().registerEvents(new JumpAndRunListener(), this);
+		getServer().getPluginManager().registerEvents(new JumpAndRunScoreTracker(), this);
 		new JumpAndRunCheckpointGui(this);
 		new JumpAndRunManagementGui(this);
 		new JumpAndRunCheckpointEditorGui(this);

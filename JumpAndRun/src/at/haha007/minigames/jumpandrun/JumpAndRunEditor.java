@@ -165,11 +165,13 @@ public class JumpAndRunEditor implements Listener {
 		for (int i = 0; i < guardianIDs.length; i++) {
 			guardianIDs[i] = rand.nextInt();
 		}
-		Utils.guardianBeam(player, jnr.getCheckpoint(1).getPos(), jnr.getCheckpoint(0).getPos(), guardianIDs[1], guardianIDs[0]);
-		for (int i = guardianIDs.length - 1; i > 1; i--) {
-			Utils.guardianBeamExisting(player, jnr.getCheckpoint(i).getPos(), guardianIDs[i], guardianIDs[i - 1]);
+		if (jnr.size() > 1) {
+			Utils.guardianBeam(player, jnr.getCheckpoint(1).getPos(), jnr.getCheckpoint(0).getPos(), guardianIDs[1], guardianIDs[0]);
+			for (int i = guardianIDs.length - 1; i > 1; i--) {
+				Utils.guardianBeamExisting(player, jnr.getCheckpoint(i).getPos(), guardianIDs[i], guardianIDs[i - 1]);
+			}
+			Collections.addAll(idList, guardianIDs);
 		}
-		Collections.addAll(idList, guardianIDs);
 
 		for (int i = 0; i < jnr.getCheckpoints().size(); i++) {
 			checkpointIDs[i] = rand.nextInt();

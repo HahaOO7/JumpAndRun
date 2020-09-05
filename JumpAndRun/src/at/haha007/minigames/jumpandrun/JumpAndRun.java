@@ -1,25 +1,37 @@
 package at.haha007.minigames.jumpandrun;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class JumpAndRun {
+	private Location location;
 	private final String name;
 	private final List<JumpAndRunCheckpoint> checkpoints;
-	private final HashMap<UUID, Long> highscores;
 	private boolean highlightNextCheckpoint;
-	Location location;
+	private final ArrayList<JnrScore> highscores = new ArrayList<>();
 
-	public JumpAndRun(String name, Location location, List<JumpAndRunCheckpoint> checkpoints,
-	                  HashMap<UUID, Long> highscores, boolean highlightNextCheckpoint) {
+	static class JnrScore {
+		final UUID uuid;
+		final long time;
+
+		JnrScore(UUID uuid, long time) {
+			this.uuid = uuid;
+			this.time = time;
+		}
+	}
+
+	public JumpAndRun(String name,
+	                  Location location,
+	                  List<JumpAndRunCheckpoint> checkpoints,
+	                  List<JnrScore> highscores,
+	                  boolean highlightNextCheckpoint) {
 		this.checkpoints = checkpoints == null ? new ArrayList<>() : new ArrayList<>(checkpoints);
-		this.highscores = highscores == null ? new HashMap<>() : highscores;
+		if (highscores != null) this.highscores.addAll(highscores);
 		this.name = name;
 		this.location = location;
 		this.highlightNextCheckpoint = highlightNextCheckpoint;
@@ -41,7 +53,7 @@ public class JumpAndRun {
 		return checkpoints;
 	}
 
-	public HashMap<UUID, Long> getHighscores() {
+	public List<JnrScore> getHighscores() {
 		return highscores;
 	}
 
@@ -85,4 +97,25 @@ public class JumpAndRun {
 	public void setLeavePoint(Location location) {
 		this.location = location;
 	}
+
+	public void submitScore(JumpAndRunPlayer jnrPlayer, long runTime) {
+		UUID uuid = jnrPlayer.getPlayerUUID();
+		JnrScore newScore = new JnrScore(uuid, runTime);
+		List<JnrScore> matching = highscores.stream().filter(s -> s.uuid.equals(uuid)).collect(Collectors.toList());
+		if (!matching.isEmpty()) {
+			JnrScore oldScore = matching.get(0);
+			if (oldScore.time <= newScore.time) return;
+		}
+		highscores.removeAll(matching);
+		int index = Collections.binarySearch(highscores, newScore, Comparator.comparingLong(s -> s.time));
+		if (index >= 0) {
+			highscores.remove(index);
+		} else {
+			//flip the bits (not gate) to get the insertion point
+			index = ~index;
+		}
+		highscores.add(index, newScore);
+		Bukkit.getScheduler().runTaskAsynchronously(JumpAndRunPlugin.getInstance(), () -> JumpAndRunPlugin.getLoader().saveJumpAndRun(this));
+	}
+
 }

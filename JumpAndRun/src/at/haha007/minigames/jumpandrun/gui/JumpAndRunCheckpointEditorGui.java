@@ -57,8 +57,8 @@ public class JumpAndRunCheckpointEditorGui implements @NotNull Listener {
 		ItemMeta arrowMeta = arrowItem.getItemMeta();
 		arrowMeta.setDisplayName(ChatColor.GOLD + "Set Direction");
 		arrowMeta.setLore(new ArrayList<>(Arrays.asList(ChatColor.AQUA + "Overrides yaw/pitch",
-			ChatColor.AQUA + "Yaw:   " + ChatColor.DARK_AQUA + cp.getYaw(),
-			ChatColor.AQUA + "Pitch: " + ChatColor.DARK_AQUA + cp.getPitch()
+			ChatColor.AQUA + "Yaw:  " + ChatColor.DARK_AQUA + String.format("%5.1f", cp.getYaw()),
+			ChatColor.AQUA + "Pitch:" + ChatColor.DARK_AQUA + String.format("%5.1f", cp.getPitch())
 		)));
 		arrowItem.setItemMeta(arrowMeta);
 		inv.setItem(0, JumpAndRunPlugin.getEditor().getEditorTool(jnr, cpIndex));
@@ -103,6 +103,8 @@ public class JumpAndRunCheckpointEditorGui implements @NotNull Listener {
 			case 2:
 				cp.setRotation(event.getWhoClicked().getLocation().getYaw(), event.getWhoClicked().getLocation().getPitch());
 				JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
+				int moneyDif = Integer.parseInt(event.getClickedInventory().getItem(5).getItemMeta().getLore().get(1).replaceFirst(ChatColor.AQUA + "Multiplyer: {2}" + ChatColor.DARK_AQUA, ""));
+				Bukkit.getScheduler().runTaskLater(plugin, () -> open((Player) event.getWhoClicked(), jnr, checkpointIndex, moneyDif), 0);
 				break;
 
 			case 0:
@@ -115,7 +117,7 @@ public class JumpAndRunCheckpointEditorGui implements @NotNull Listener {
 				if (item == null) break;
 				List<String> lore = item.getItemMeta().getLore();
 				if (lore == null) break;
-				int moneyDif = Integer.parseInt(lore.get(1).replaceFirst(
+				moneyDif = Integer.parseInt(lore.get(1).replaceFirst(
 					ChatColor.AQUA + "Multiplyer: {2}" + ChatColor.DARK_AQUA,
 					""));
 				cp.setMoney(cp.getMoney() + (event.getClick().isLeftClick() ? (Math.pow(10, moneyDif)) : -(Math.pow(10, moneyDif))));

@@ -1,6 +1,7 @@
 package at.haha007.minigames.jumpandrun.events;
 
 import at.haha007.minigames.jumpandrun.JumpAndRun;
+import at.haha007.minigames.jumpandrun.JumpAndRunPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.HandlerList;
@@ -11,11 +12,23 @@ public class StartJnrEvent extends PlayerEvent implements Cancellable {
 
 	private static final HandlerList HANDLERS = new HandlerList();
 	private final JumpAndRun jumpAndRun;
+	private final int cp;
+	private final JumpAndRunPlayer jnrPlayer;
 	private boolean cancelled = false;
 
-	public StartJnrEvent(Player player, JumpAndRun jumpAndRun) {
+	public StartJnrEvent(Player player, JumpAndRun jumpAndRun, JumpAndRunPlayer jnrPlayer, int cp) {
 		super(player);
 		this.jumpAndRun = jumpAndRun;
+		this.jnrPlayer = jnrPlayer;
+		this.cp = cp;
+	}
+
+	public int getCheckpoint() {
+		return cp;
+	}
+
+	public JumpAndRunPlayer getJnrPlayer() {
+		return jnrPlayer;
 	}
 
 	public static HandlerList getHandlerList() {

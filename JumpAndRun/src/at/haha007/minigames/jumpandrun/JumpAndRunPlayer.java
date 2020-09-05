@@ -1,6 +1,8 @@
 package at.haha007.minigames.jumpandrun;
 
 import at.haha007.edenlib.utils.Utils;
+import at.haha007.minigames.jumpandrun.events.ChangeJnrCheckpointEvent;
+import at.haha007.minigames.jumpandrun.events.ReachCheckpointEvent;
 import net.minecraft.server.v1_16_R2.Blocks;
 import net.minecraft.server.v1_16_R2.Items;
 import org.bukkit.*;
@@ -75,6 +77,8 @@ public class JumpAndRunPlayer {
 		player.getActivePotionEffects().forEach(effect -> player.removePotionEffect(effect.getType()));
 		player.setFireTicks(0);
 		player.setFallDistance(0);
+		int cpIndex = getActiveCheckPointIndex(activeJumpAndRun);
+		Bukkit.getServer().getPluginManager().callEvent(new ChangeJnrCheckpointEvent(activeJumpAndRun, this, player, cpIndex, cpIndex));
 		Bukkit.getScheduler().runTaskLater(JumpAndRunPlugin.getInstance(), this::fillJnrInventory, 1);
 	}
 
@@ -104,11 +108,16 @@ public class JumpAndRunPlayer {
 		if (activeJumpAndRun == null)
 			return;
 		int activeCheckpointIndex = checkPoints.getOrDefault(activeJumpAndRun.getName(), 0);
-		checkPoints.put(activeJumpAndRun.getName(), activeCheckpointIndex + 1);
 		int maxCheckpointIndex = reachedCheckpoints.getOrDefault(activeJumpAndRun.getName(), 0);
 		OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
 		Player player = offlinePlayer.getPlayer();
 		JumpAndRunCheckpoint checkpoint = getActiveCheckpoint();
+
+		ReachCheckpointEvent event = new ReachCheckpointEvent(player, activeJumpAndRun, this, activeCheckpointIndex + 1);
+		Bukkit.getServer().getPluginManager().callEvent(event);
+		if (event.isCancelled()) return;
+
+		checkPoints.put(activeJumpAndRun.getName(), activeCheckpointIndex + 1);
 		if (checkpoint == null) return;
 		if (player != null) {
 			if (activeJumpAndRun.shouldHighlightNextCheckpoint()) {
