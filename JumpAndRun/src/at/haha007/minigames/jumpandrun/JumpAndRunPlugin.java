@@ -110,7 +110,7 @@ public class JumpAndRunPlugin extends JavaPlugin {
 		if (!setupEconomy())
 			Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[JumpAndRun] Failed to connect to economy!");
 		players = new HashMap<>();
-		loader = new JumpAndRunLoader();
+		loader = new JumpAndRunLoader(this);
 		editor = new JumpAndRunEditor();
 		jumpAndRuns = loader.loadAllJumpAndRuns();
 

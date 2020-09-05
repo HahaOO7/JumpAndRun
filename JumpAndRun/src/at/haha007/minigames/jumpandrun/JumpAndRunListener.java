@@ -1,5 +1,6 @@
 package at.haha007.minigames.jumpandrun;
 
+import at.haha007.edenlib.utils.Utils;
 import at.haha007.minigames.jumpandrun.events.StopJnrEvent;
 import at.haha007.minigames.jumpandrun.gui.JumpAndRunCheckpointGui;
 import org.bukkit.Bukkit;
@@ -40,7 +41,7 @@ public class JumpAndRunListener implements Listener {
 			case 8:
 				jnr = jnrPlayer.getActiveJumpAndRun();
 
-				StopJnrEvent e = new StopJnrEvent(event.getPlayer(), jnr, false);
+				StopJnrEvent e = new StopJnrEvent(event.getPlayer(), jnr, false, jnrPlayer);
 				Bukkit.getPluginManager().callEvent(e);
 
 				jnrPlayer.setActiveJnr(null);
@@ -86,7 +87,7 @@ public class JumpAndRunListener implements Listener {
 
 		JumpAndRun jnr = jnrPlayer.getActiveJumpAndRun();
 
-		StopJnrEvent e = new StopJnrEvent(event.getPlayer(), jnr, true);
+		StopJnrEvent e = new StopJnrEvent(event.getPlayer(), jnr, true, jnrPlayer);
 		Bukkit.getPluginManager().callEvent(e);
 
 		jnrPlayer.setActiveJnr(null);
@@ -96,6 +97,8 @@ public class JumpAndRunListener implements Listener {
 	@EventHandler
 	void onStopJnr(StopJnrEvent event) {
 		event.getPlayer().updateInventory();
+		int id = event.getJnrPlayer().getFakeBlockId();
+		if (id != 0) Utils.destroyFakeEntity(event.getPlayer(), id);
 	}
 
 	@EventHandler(priority = EventPriority.LOWEST)
@@ -108,7 +111,7 @@ public class JumpAndRunListener implements Listener {
 		Location to = event.getTo();
 		if (to.getWorld() == jnr.getWorld() && to.toVector().distance(cp.getPos()) < 1) return;
 
-		StopJnrEvent e = new StopJnrEvent(event.getPlayer(), jnr, true);
+		StopJnrEvent e = new StopJnrEvent(event.getPlayer(), jnr, true, jnrPlayer);
 		Bukkit.getPluginManager().callEvent(e);
 
 		jnrPlayer.setActiveJnr(null);

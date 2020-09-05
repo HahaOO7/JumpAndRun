@@ -5,6 +5,7 @@ import at.haha007.minigames.jumpandrun.JumpAndRun;
 import at.haha007.minigames.jumpandrun.JumpAndRunCheckpoint;
 import at.haha007.minigames.jumpandrun.JumpAndRunPlayer;
 import at.haha007.minigames.jumpandrun.JumpAndRunPlugin;
+import at.haha007.minigames.jumpandrun.events.ChangeJnrCheckpointEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -105,47 +106,50 @@ public class JumpAndRunCheckpointGui implements @NotNull Listener {
 	void onInventoryClick(InventoryClickEvent event) {
 		if (!event.getView().getTitle().equals(titleCheckpointMenu)) return;
 
+		Player player = (Player) event.getWhoClicked();
 		event.setCancelled(true);
 		if (event.getClickedInventory() != event.getView().getTopInventory()) return;
 		int page = ItemUtils.getNbtInt(event.getInventory().getItem(45), "page");
 		JumpAndRun jnr = JumpAndRunPlugin.getJumpAndRun(ItemUtils.getNbtString(event.getInventory().getItem(45), "jnr"));
 		if (jnr == null) {
-			event.getWhoClicked().closeInventory();
+			player.closeInventory();
 			return;
 		}
 
 		switch (event.getSlot()) {
 			case 53:
-				Bukkit.getScheduler().runTaskLater(plugin, () -> open((Player) event.getWhoClicked(), jnr, page + 1), 0);
+				Bukkit.getScheduler().runTaskLater(plugin, () -> open(player, jnr, page + 1), 0);
 				break;
 			case 49:
-				if (!event.getWhoClicked().hasPermission("jnr.command.use")) break;
-				jnr.setLeavePoint(event.getWhoClicked().getLocation());
+				if (!player.hasPermission("jnr.command.use")) break;
+				jnr.setLeavePoint(player.getLocation());
 				JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
 				break;
 			case 45:
-				Bukkit.getScheduler().runTaskLater(plugin, () -> open((Player) event.getWhoClicked(), jnr, page - 1), 0);
+				Bukkit.getScheduler().runTaskLater(plugin, () -> open(player, jnr, page - 1), 0);
 				break;
 			case 51:
 				jnr.setHighlightNextCheckpoint(!jnr.shouldHighlightNextCheckpoint());
 				JumpAndRunPlugin.getLoader().saveJumpAndRun(jnr);
-				Bukkit.getScheduler().runTask(plugin, () -> open((Player) event.getWhoClicked(), jnr, page));
+				Bukkit.getScheduler().runTask(plugin, () -> open(player, jnr, page));
 				break;
 			default:
 				if (event.getSlot() >= 45)
 					break;
 				ItemStack cpItem = event.getCurrentItem();
 				if (cpItem == null) break;
-				if (cpItem.getType() == Material.DIRT) break;
+				JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayerIfActive(player);
+				if (cpItem.getType() == Material.DIRT && jnrPlayer != null) break;
 				int cp = ItemUtils.getNbtInt(cpItem, "index");
-				JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayerIfActive((Player) event.getWhoClicked());
 				if (jnrPlayer != null) {
-					jnrPlayer.setCheckpoint(jnr, cp);
+					ChangeJnrCheckpointEvent ev = new ChangeJnrCheckpointEvent(jnr, jnrPlayer, player, jnrPlayer.getActiveCheckPointIndex(jnr), cp);
+					if (ev.isCancelled()) break;
+					jnrPlayer.setCheckpoint(jnr, ev.getTo());
 					jnrPlayer.respawn();
 					break;
 				}
 				JumpAndRunCheckpoint checkpoint = jnr.getCheckpoint(cp);
-				event.getWhoClicked().teleport(new Location(jnr.getWorld(), checkpoint.getPosX() + .5, checkpoint.getPosY(), checkpoint.getPosZ(), checkpoint.getYaw(), checkpoint.getPitch()));
+				player.teleport(new Location(jnr.getWorld(), checkpoint.getPosX() + .5, checkpoint.getPosY(), checkpoint.getPosZ(), checkpoint.getYaw(), checkpoint.getPitch()));
 				break;
 		}
 	}

@@ -115,7 +115,7 @@ public class JumpAndRunPlayer {
 				highlightCheckpoint(player, activeJumpAndRun.getCheckpoint(activeCheckpointIndex + 2));
 				player.sendBlockChange(checkpoint.getPos().toLocation(player.getWorld()), player.getWorld().getBlockAt(checkpoint.getPosX(), checkpoint.getPosY(), checkpoint.getPosZ()).getBlockData());
 			}
-			player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1f, 1f);
+			player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, .5f, 1f);
 			player.spawnParticle(Particle.PORTAL, player.getLocation(), 500);
 			player.sendActionBar(ChatColor.GOLD + "Checkpoint Erreicht!");
 		}
@@ -176,5 +176,9 @@ public class JumpAndRunPlayer {
 	public JumpAndRunCheckpoint getActiveCheckPoint() {
 		if (activeJumpAndRun == null) return null;
 		return activeJumpAndRun.getCheckpoint(checkPoints.getOrDefault(activeJumpAndRun.getName(), 0));
+	}
+
+	public int getFakeBlockId() {
+		return highlightedCheckpointId;
 	}
 }

@@ -33,7 +33,7 @@ public class JumpAndRunEditor implements Listener {
 	void onPlayerInteract(PlayerInteractEvent e) {
 		if (e.getHand() != EquipmentSlot.HAND)
 			return;
-		if (!e.getPlayer().hasPermission("jnr.editor.use"))
+		if (!e.getPlayer().hasPermission("jnr.command.use"))
 			return;
 		ItemStack item = e.getPlayer().getInventory().getItemInMainHand();
 		if (!isEditorTool(item))
@@ -83,7 +83,7 @@ public class JumpAndRunEditor implements Listener {
 
 	@EventHandler
 	void onSlotChange(PlayerItemHeldEvent e) {
-		if (!e.getPlayer().hasPermission("jnr.editor.use"))
+		if (!e.getPlayer().hasPermission("jnr.command.use"))
 			return;
 		if (!e.getPlayer().isSneaking()) {
 			removePath(e.getPlayer());
