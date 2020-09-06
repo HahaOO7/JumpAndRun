@@ -39,13 +39,7 @@ public class JumpAndRunListener implements Listener {
 				JumpAndRunCheckpointGui.open(player, jnr);
 				break;
 			case 8:
-				jnr = jnrPlayer.getActiveJumpAndRun();
-
-				StopJnrEvent e = new StopJnrEvent(event.getPlayer(), jnr, false, jnrPlayer);
-				Bukkit.getPluginManager().callEvent(e);
-
-				jnrPlayer.setActiveJnr(null);
-				player.teleport(jnr.getLeavePoint());
+				jnrPlayer.stopActiveJumpAndRun(player, true);
 				break;
 			default:
 				break;
@@ -84,14 +78,7 @@ public class JumpAndRunListener implements Listener {
 	void onPlayerDisconnect(PlayerQuitEvent event) {
 		JumpAndRunPlayer jnrPlayer = JumpAndRunPlugin.getPlayerIfActive(event.getPlayer());
 		if (jnrPlayer == null) return;
-
-		JumpAndRun jnr = jnrPlayer.getActiveJumpAndRun();
-
-		StopJnrEvent e = new StopJnrEvent(event.getPlayer(), jnr, true, jnrPlayer);
-		Bukkit.getPluginManager().callEvent(e);
-
-		jnrPlayer.setActiveJnr(null);
-		event.getPlayer().teleport(jnr.getLeavePoint());
+		jnrPlayer.stopActiveJumpAndRun(event.getPlayer(), true);
 	}
 
 	@EventHandler
@@ -111,9 +98,6 @@ public class JumpAndRunListener implements Listener {
 		Location to = event.getTo();
 		if (to.getWorld() == jnr.getWorld() && to.toVector().distance(cp.getPos()) < 1) return;
 
-		StopJnrEvent e = new StopJnrEvent(event.getPlayer(), jnr, true, jnrPlayer);
-		Bukkit.getPluginManager().callEvent(e);
-
-		jnrPlayer.setActiveJnr(null);
+		jnrPlayer.stopActiveJumpAndRun(event.getPlayer(), false);
 	}
 }

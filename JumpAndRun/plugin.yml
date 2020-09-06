@@ -1,6 +1,6 @@
 main: at.haha007.minigames.jumpandrun.JumpAndRunPlugin
 version: 1.0
-api-version: 1.15
+api-version: 1.16
 name: JumpAndRun
 author: Haha007
 depend:

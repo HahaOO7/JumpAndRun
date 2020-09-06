@@ -3,6 +3,7 @@ package at.haha007.minigames.jumpandrun;
 import at.haha007.edenlib.utils.Utils;
 import at.haha007.minigames.jumpandrun.events.ChangeJnrCheckpointEvent;
 import at.haha007.minigames.jumpandrun.events.ReachCheckpointEvent;
+import at.haha007.minigames.jumpandrun.events.StopJnrEvent;
 import net.minecraft.server.v1_16_R2.Blocks;
 import net.minecraft.server.v1_16_R2.Items;
 import org.bukkit.*;
@@ -11,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
+import java.util.InputMismatchException;
 import java.util.Random;
 import java.util.UUID;
 
@@ -112,16 +114,17 @@ public class JumpAndRunPlayer {
 		OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
 		Player player = offlinePlayer.getPlayer();
 		JumpAndRunCheckpoint checkpoint = getActiveCheckpoint();
+		JumpAndRun active = activeJumpAndRun;
 
-		ReachCheckpointEvent event = new ReachCheckpointEvent(player, activeJumpAndRun, this, activeCheckpointIndex + 1);
+		ReachCheckpointEvent event = new ReachCheckpointEvent(player, active, this, activeCheckpointIndex + 1);
 		Bukkit.getServer().getPluginManager().callEvent(event);
 		if (event.isCancelled()) return;
 
-		checkPoints.put(activeJumpAndRun.getName(), activeCheckpointIndex + 1);
+		checkPoints.put(active.getName(), activeCheckpointIndex + 1);
 		if (checkpoint == null) return;
 		if (player != null) {
-			if (activeJumpAndRun.shouldHighlightNextCheckpoint()) {
-				highlightCheckpoint(player, activeJumpAndRun.getCheckpoint(activeCheckpointIndex + 2));
+			if (active.shouldHighlightNextCheckpoint()) {
+				highlightCheckpoint(player, active.getCheckpoint(activeCheckpointIndex + 2));
 				player.sendBlockChange(checkpoint.getPos().toLocation(player.getWorld()), player.getWorld().getBlockAt(checkpoint.getPosX(), checkpoint.getPosY(), checkpoint.getPosZ()).getBlockData());
 			}
 			player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, .5f, 1f);
@@ -129,7 +132,7 @@ public class JumpAndRunPlayer {
 			player.sendActionBar(ChatColor.GOLD + "Checkpoint Erreicht!");
 		}
 		if (activeCheckpointIndex == maxCheckpointIndex) {
-			reachedCheckpoints.put(activeJumpAndRun.getName(), activeCheckpointIndex + 1);
+			reachedCheckpoints.put(active.getName(), activeCheckpointIndex + 1);
 			double money = checkpoint.getMoney();
 			if (money > 0) {
 				JumpAndRunPlugin.getEconomy().depositPlayer(offlinePlayer, checkpoint.getMoney());
@@ -185,6 +188,14 @@ public class JumpAndRunPlayer {
 	public JumpAndRunCheckpoint getActiveCheckPoint() {
 		if (activeJumpAndRun == null) return null;
 		return activeJumpAndRun.getCheckpoint(checkPoints.getOrDefault(activeJumpAndRun.getName(), 0));
+	}
+
+	public void stopActiveJumpAndRun(Player player, boolean teleport) {
+		if (!player.getUniqueId().equals(playerUUID)) throw new InputMismatchException();
+		StopJnrEvent e = new StopJnrEvent(player, activeJumpAndRun, true, this);
+		Bukkit.getPluginManager().callEvent(e);
+		if (teleport) player.teleport(activeJumpAndRun.getLeavePoint());
+		setActiveJnr(null);
 	}
 
 	public int getFakeBlockId() {
